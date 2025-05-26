@@ -1,0 +1,131 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% block 'main' %}
+<div class="card">
+    <div class="card-body ">
+        <h5 class="card-title">Actions</h5>
+        <button type="button" title="Edit Class" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#edit{{ forloop.counter }}"><i class="bi bi-pencil-square"></i></button>
+        <a type="button" title="Delete Class" href="{% url 'class_delete' class.id %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i></a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Class Detail</button>
+                    </li>
+
+                </ul>
+
+                <div class="tab-content pt-2">
+                    <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                        <h5 class="card-title">Class Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                                <i class="ri-contacts-book-2-fill"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{ class.name|upper }}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Class Name</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-6">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                                <i class="bi bi-people"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{ class.number_of_students }}</h6>
+                                                <span class="text-muted small pt-2 ps-1">No of Students</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-body">
+                                    {% if class.section.all %}
+                                    <h5 class="card-title">Class Sections of {{ class.name|upper }}</h5>
+                                    <ul class="list-group">
+                                        {% for section in class.section.all %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                  {{ class.name|upper }} {{ section.name|upper }}
+                                                <span class="">
+                                                    <a title="View Class Detail" href="{% url 'class_section_info_detail' class.id section.id %}" class="btn btn-primary"><i class="bi bi-eye"></i></a>
+                                                </span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                        <h5 class="card-title text-center">No Class Section in {{ class.name|upper }}</h5>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<form method="POST" action="{% url 'class_edit' class.id %}">
+    {% csrf_token %}
+    <div class="modal fade" id="edit" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Class - {{ class|upper }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="hidden" name="updated_by" value="{{ user.id }}" />
+                                <input type="text" name="name" value="{{ class.name|lower }}" autocomplete="off" required class="form-control">
+                                <label for="floatingName">Class <span style="color:red"><b>*</b></span></label>
+                            </div><br />
+                        </div>
+
+                        <div class="col-md-6">
+                            <h4 class="card-title" style="margin-top:-20px">Select Sections </h4>
+                            <div class="form-floaing">
+                                <ul style="list-style:none">
+                                    {% for section in class_section_list %}
+                                    <li><input type="checkbox" name="section" {% if section in class.section.all %} checked {% endif %} value="{{section.id}}" /> {{section|upper}}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div><br />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{%endblock %}

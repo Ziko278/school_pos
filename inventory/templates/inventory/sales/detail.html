@@ -1,0 +1,51 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+<div class="card">
+  <div class="card-body">
+    <h4 class="card-title">Order {{ sale.transaction_id }}</h4>
+    <p><strong>Date:</strong> {{ sale.sale_date|date:"Y-m-d H:i" }}</p>
+    <p><strong>Student:</strong>
+      {% if sale.student %}
+        {{ sale.student.surname }} {{ sale.student.last_name }}
+      {% else %}
+        —  
+      {% endif %}
+    </p>
+    <p><strong>Status:</strong> {{ sale.get_status_display }}</p>
+
+    <table class="table mt-3">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          <th>Unit Price (₦)</th>
+          <th>Cost Price (₦)</th>
+          <th>Subtotal (₦)</th>
+          <th>Profit (₦)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.unit_price }}</td>
+          <td>{{ item.cost_price }}</td>
+          <td>{{ item.subtotal }}</td>
+          <td>{{ item.profit }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="4" class="text-end">Total:</th>
+          <th>{{ sale.total_amount }}</th>
+          <th><th>{{ total_profit }}</th></th>
+        </tr>
+      </tfoot>
+    </table>
+
+    <a class="btn btn-secondary" onclick="window.history.back()">Back to List</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">ADD SUPPLIER
+                    <button class="btn btn-danger" onclick="window.history.back()" style="float:right"><i
+                            class="bi bi-arrow-left"></i>
+                        Back
+                    </button>
+                </h4>
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <h5 class="text-danger">Please correct the following errors:</h5>
+                    <ul>
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ field|capfirst }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <form action="" class="row g-3 needs-validation" enctype="multipart/form-data" method="POST" novalidate>
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Supplier <span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.name}}
+                                    <br>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Contact Person <span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.contact_person}}
+                                    <br>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label" for="{{ form.name.id_for_label }}">Phone Number <span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.phone_number}}
+                                    <br>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label" for="{{ form.name.id_for_label }}">Email <span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.email}}
+                                    <br>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label" for="{{ form.name.id_for_label }}">Address <span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.address}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h4 class="card-title">Select Products</h4>
+                            <div class="form-group row">
+
+                                <div class="col-sm-8">
+                                    {{form.products}}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <br/>
+                            <button class="btn btn-primary btn-rounded" type="submit" style="width:150px;margin:10px">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'admin_site/scripts/jquery.js' %}"></script>
+<script>
+    $(document).ready(function(){
+        let barcodeBuffer = '';
+        let lastKeypressTime = 0;
+        const BARCODE_SCAN_THRESHOLD = 100; // milliseconds - typical time between chars from a scanner
+        const BARCODE_MIN_LENGTH = 6; // Minimum expected barcode length (adjust as needed)
+
+        $(document).on('keypress', function(e) {
+            const currentTime = new Date().getTime();
+
+            // If the time between key presses is too long, or it's the first character, reset the buffer
+            if (currentTime - lastKeypressTime > BARCODE_SCAN_THRESHOLD) {
+                barcodeBuffer = '';
+            }
+
+            // Append the character to the buffer
+            barcodeBuffer += String.fromCharCode(e.which);
+            lastKeypressTime = currentTime;
+
+            // Barcode scanners often send an 'Enter' key (keyCode 13 or which 13) at the end.
+            if (e.which === 13) {
+                e.preventDefault(); // Prevent default Enter key behavior (e.g., form submission)
+
+                // Check if the buffered input looks like a barcode
+                if (barcodeBuffer.length >= BARCODE_MIN_LENGTH) {
+                    $('#id_barcode').val(barcodeBuffer.trim()); // Trim any whitespace
+
+                    // Optionally, you can trigger form submission here if desired
+                    // $('form').submit(); // Use with caution: might submit incomplete forms
+                }
+                barcodeBuffer = ''; // Clear the buffer after processing
+            }
+        });
+
+        // Add proper 'for' attributes to labels for accessibility
+        $('label[for]').each(function() {
+            var labelFor = $(this).attr('for');
+            var input = $('#' + labelFor);
+            if (input.length > 0) {
+                // Check if the input is a checkbox, and apply appropriate class
+                if (input.is(':checkbox')) {
+                    input.addClass('form-check-input');
+                } else {
+                    input.addClass('form-control');
+                }
+            }
+        });
+    });
+</script>
+
+{%endblock %}

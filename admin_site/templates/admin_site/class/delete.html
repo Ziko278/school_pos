@@ -1,0 +1,25 @@
+{% extends 'admin_dashboard/layout.html' %}
+{% block 'main' %}
+{% load static %}
+<div class="col-lg-12 grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">Delete Class</h4>
+            <p>Class: <i>{{class.name|upper }}</i></p>
+
+            <p>The class will be permanently deleted.</p>
+            {% if class.no_of_students > 0 %}
+                <p>{{class.no_of_students }} student{{class.no_of_students|pluralize }} in the class will be affected</p>
+            {% else %}
+                <p>There is currently no student in this class.</p>
+            {% endif %}
+            <form style="display:inline" method="post">
+                {% csrf_token %}
+
+                <button class="btn btn-success">Proceed</button>
+            </form>
+            <a class="btn btn-danger" href="{% url 'class_detail' class.id %}"> Cancel</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

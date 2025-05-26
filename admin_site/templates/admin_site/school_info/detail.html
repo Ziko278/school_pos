@@ -1,0 +1,79 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% block 'main' %}
+
+<form action="" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- row -->
+    <div class="row">
+        <div class="col-xl-3 col-lg-4">
+            <div class="clearfix">
+                <div class="card card-bx profile-card author-profile m-b30">
+                    <div class="card-body">
+                        <div class="">
+                            <div class="author-profile">
+                                <div class="author-media">
+                                    <br>
+                                    <h6 class="title"><b>School Logo</b></h6>
+                                    <img {% if school_info.logo %} src="{{ school_info.logo.url }}" style="width:150px;height:120px;border-radius:10px" {% else %} src="{% static 'admin_school/images/user.jpg' %}" {% endif %} alt="">
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+        <div class="col-xl-9 col-lg-8">
+            <div class="card profile-card card-bx m-b30">
+                <div class="card-header">
+                    <h6 class="title"><b>SCHOOL DATA</b> </h6>
+                    <a {% if is_school_info %} href="{% url 'school_info_edit' school_info.id %}" {% else %} href="{% url 'school_info_create' %}" {% endif %} class="btn btn-primary" style="float:right">Update Info</a>
+                </div>
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">School Name</label>
+                                <h1 class="card-title">{{ school_info.name }}</h1>
+                                <br>
+                            </div>
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">School Name Abbreviation</label>
+                                <h1 class="card-title">{{ school_info.short_name }}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Mobile 1</label>
+                                <h1 class="card-title">{{ school_info.mobile }}</h1>
+                                <br>
+
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Email</label>
+                                <h1 class="card-title">{{ school_info.email|lower }}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Address</label>
+                                <h1 class="card-title">{{ school_info.address }}</h1>
+                                <br>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+            </div>
+        </div>
+    </div>
+
+</form>
+{% endblock %}

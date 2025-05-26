@@ -1,0 +1,76 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% load humanize %}
+{% block 'main' %}
+
+<form action="" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card profile-card card-bx m-b30">
+                <div class="card-header">
+                    <h6 class="title"><b>SCHOOL SETTING</b> </h6>
+                    <a {% if is_school_setting %} href="{% url 'school_setting_edit' school_setting.id %}" {% else %} href="{% url 'school_setting_create' %}" {% endif %} class="btn btn-primary" style="float:right">Update Setting</a>
+                </div>
+
+                    <div class="card-body">
+                        <div class="row">
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Current Session</label>
+                                <h1 class="card-title">{{ school_setting.session }}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Current Term</label>
+                                <h1 class="card-title">{{ school_setting.term }}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Allow Student Debt</label>
+                                <h1 class="card-title">{% if school_setting.allow_student_debt %}Yes{% else %}No{% endif %}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Auto Low Balance Notification</label>
+                                <h1 class="card-title">{% if school_setting.auto_low_balance_notification %}Yes{% else %}No{% endif %}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Max Student Debt</label>
+                                <h1 class="card-title">₦{{ school_setting.max_student_debt|intcomma }}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Low Balance Threshold</label>
+                                <h1 class="card-title">₦{{ school_setting.low_balance|intcomma }}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Allow Refund</label>
+                                <h1 class="card-title">{% if school_setting.allow_refund %}Yes{% else %}No{% endif %}</h1>
+                                <br>
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <label class="form-label">Auto Generate Student ID</label>
+                                <h1 class="card-title">{% if school_setting.auto_generate_student_id %}Yes{% else %}No{% endif %}</h1>
+                                <br>
+                            </div>
+
+
+
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

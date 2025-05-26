@@ -1,0 +1,68 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+{% load humanize %}
+
+<div class="col-lg-12 grid-margin stretch-card">
+
+    <div class="card">
+        <div class="filter">
+        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+                <h6>Action</h6>
+            </li>
+
+            <li class="dropdown-item"><a class="btn btn-primary" style="width:100%" href="{% url 'student_create' %}">Register Student</a></li>
+        </ul>
+    </div>
+        <div class="card-body">
+             {% if is_class %}
+                <h4 class="card-title text-center">List of Student in {{ student_class|title}} {{class_section|title}}</h4>
+            {% else %}
+                <h4 class="card-title text-center">List of Student
+
+                </h4>
+            {% endif %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-borderless datatable">
+                    <thead>
+                        <tr>
+                            <th> S/N </th>
+                            <th> Fullname </th>
+                            <th class="text-center"> Registration No </th>
+                            <th class="text-center"> Class </th>
+                            <th class="text-center"> Wallet/Debt </th>
+                            <th> Action </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% if student_list %}
+                    {% for student in student_list %}
+                        <tr>
+                            <td> <image class="rounded-circle" style="width:50px;height:50px" {% if student.image %} src="{{ student.image.url }}" {% else %} src="{% static 'admin_dashboard/images/default_image.jpg' %}" {% endif %}/>
+                            <td> {{ student|title }}  </td>
+                            <td class="text-center">  {{ student.registration_number|upper }}</td>
+                            <th class="text-center">{{ student.student_class|upper }} {{ student.class_section|upper }}  </th>
+                            <th class="text-center">
+                                <span class="text-success">{{student.student_wallet.balance|intcomma}}</span> /
+                                <span class="text-danger">{{student.student_wallet.debt|intcomma}}</span>
+                            </th>
+                            <td>
+                                <a title="Edit Student Details" class="btn btn-warning" href="{% url 'student_edit' student.id %}"><i class="bi bi-pencil"></i></a>
+                                <a title="View Student Details" class="btn btn-primary" href="{% url 'student_detail' student.id %}"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="6"><h3 class="text-center">No Student is currently registered</h3></td></tr>
+
+                    {% endif %}
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

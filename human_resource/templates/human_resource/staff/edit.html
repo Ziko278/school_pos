@@ -1,0 +1,97 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% block 'main' %}
+<form action="" class="row g-3 needs-validation" enctype="multipart/form-data" method="POST" novalidate>
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">UPDATE STAFF DETAIL - {{ staff|upper }}</h5>
+                    <p class="card-description">All fields with a red star <span style="color:red"><b>*</b></span> are
+                        required.</p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">STAFF BIO DATA</h5>
+                    <div class="row mb-3">
+                        <div class="form-floating mb-3 col-md-4">
+                            <input name="type" type="hidden" value="{{ user.profile.type }}"/>
+                            <input name="user" type="hidden" value="{{ user.id }}"/>
+                            {{form.surname}}
+                            <label for="floatingInput"> Surname <span style="color:red"><b>*</b></span></label>
+                            <div class="invalid-tooltip">Surname is required!</div>
+                        </div>
+
+                        <div class="form-floating mb-3 col-md-4">
+                            {{form.last_name}}
+                            <label for="floatingPassword">Last Name <span style="color:red">*</span></label>
+                            <div class="invalid-tooltip">last name is required!</div>
+                        </div>
+
+                        <div class="form-floating mb-3 col-md-4">
+                            {{form.mobile}}
+                            <label for="floatingInput"> Phone No</label>
+                        </div>
+                        <div class="form-floating mb-3 col-md-4">
+                            {{form.email}}
+                            <label for="floatingInput">Email</label>
+                        </div>
+
+                        <div class="form-floating mb-3 col-md-4">
+                            {{form.gender}}
+                            <label for="floatingInput">Gender <span style="color:red">*</span></label>
+                            <div class="invalid-tooltip">Select Gender</div>
+                        </div>
+
+                      <div class="form-floating mb-3 col-md-4">
+                            {{form.group}}
+                            <label for="floatingPassword">Role <span style="color:red">*</span></label>
+                            <div class="invalid-tooltip">Select Role</div>
+                        </div>
+
+                        <div class="form-floating mb-3 col-md-4">
+                            {{form.image}}
+                            <label for="floatingPassword">Image</label>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+
+                    <div class="row mb-3">
+
+                    </div>
+
+
+                    <div class="row mb-3">
+
+                        <div class="form-floating mb-3 col-md-12">
+                            <br/>
+                            <button class="btn btn-primary" style="float:right" type="submit">Register Staff</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</form>
+
+{%endblock %}

@@ -1,0 +1,379 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+
+<style>
+    /* Hide the deletion checkboxes to prevent user confusion */
+    input[type="checkbox"][name$="-DELETE"] {
+        display: none;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">RECEIVE NEW STOCK
+                    <button class="btn btn-danger" onclick="window.history.back()" style="float:right"><i
+                            class="bi bi-arrow-left"></i>
+                        Back
+                    </button>
+                </h4>
+
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Barcode scanner instruction tip -->
+                <div class="alert alert-info" style="margin-bottom:15px;">
+                    <strong>Tip:</strong> Use a barcode scanner to quickly add products.
+                    Simply scan a barcode anywhere on this page and the product will be auto-added.
+                </div>
+
+                <form action="" class="row g-3" method="POST" id="stock-in-form" novalidate>
+                    {% csrf_token %}
+
+                    <div class="card-header bg-light mb-3">
+                        <h5 class="mb-0">Receipt Details</h5>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label" for="{{ stock_in_summary_form.date.id_for_label }}">Receipt Date <span style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{ stock_in_summary_form.date }}
+                                    {% if stock_in_summary_form.date.errors %}
+                                        <div class="text-danger">
+                                            {% for error in stock_in_summary_form.date.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-header bg-light mb-3">
+                        <h5 class="mb-0">Products Received</h5>
+                    </div>
+                    <div id="formset-container">
+                        {{ formset.management_form }}
+                        {% for form in formset %}
+                            <div class="formset-row card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Product Item #<span class="item-number"></span>
+                                        {% if formset.can_delete %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-item" style="float:right">Remove</button>
+                                        {% endif %}
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group row">
+                                                <label class="col-sm-4 col-form-label" for="{{ form.product.id_for_label }}">Product <span style="font-size:20px;color:red">*</span></label>
+                                                <div class="col-sm-8">
+                                                    {{ form.product }}
+                                                    {% if form.product.errors %}<div class="text-danger">{% for error in form.product.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group row">
+                                                <label class="col-sm-4 col-form-label" for="{{ form.quantity_added.id_for_label }}">Quantity <span style="font-size:20px;color:red">*</span></label>
+                                                <div class="col-sm-8">
+                                                    {{ form.quantity_added }}
+                                                    {% if form.quantity_added.errors %}<div class="text-danger">{% for error in form.quantity_added.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group row">
+                                                <label class="col-sm-4 col-form-label" for="{{ form.unit_cost_price.id_for_label }}">Unit Cost <span style="font-size:20px;color:red">*</span></label>
+                                                <div class="col-sm-8">
+                                                    {{ form.unit_cost_price }}
+                                                    {% if form.unit_cost_price.errors %}<div class="text-danger">{% for error in form.unit_cost_price.errors %}{{ error }}{% endfor %}</div>{% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% if form.id %}{{ form.id }}{% endif %}
+                                    {% if form.DELETE %}{{ form.DELETE }}{% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Message for "at least one product" validation -->
+                    <div id="no-product-error" class="alert alert-danger" style="display:none;">
+                        Please add at least one product to the stock receipt.
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12 text-center">
+                            <button type="button" class="btn btn-outline-primary" id="add-item">Add Another Product</button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <br/>
+                            <button class="btn btn-primary btn-rounded" type="submit" style="width:150px;margin:10px">Save Stock</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Message Modal (replaces alert) -->
+<div id="custom-message-modal" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Notification</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="$('#custom-message-modal').hide();">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-message"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="$('#custom-message-modal').hide();">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'admin_site/scripts/jquery.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    var formsetContainer = $('#formset-container');
+    var addButton = $('#add-item');
+    var totalForms = $('#id_form-TOTAL_FORMS');
+    var formPrefix = 'form';
+    var noProductErrorDiv = $('#no-product-error');
+    var customMessageModal = $('#custom-message-modal');
+    var modalMessage = $('#modal-message');
+
+    function showCustomMessage(message) {
+        modalMessage.text(message);
+        customMessageModal.show();
+    }
+
+    // Close modal on clicking outside modal content or close button
+    $(document).on('click', function(event) {
+        if (!$(event.target).closest('.modal-content, #custom-message-modal').length) {
+            customMessageModal.hide();
+        }
+    });
+
+    function updateElementIndex(el, ndx) {
+        var id_regex = new RegExp('(' + formPrefix + '-\\d+)');
+        var replacement = formPrefix + '-' + ndx;
+        if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
+        if (el.id) el.id = el.id.replace(id_regex, replacement);
+        if (el.name) el.name = el.name.replace(id_regex, replacement);
+    }
+
+    function updateItemNumbers() {
+        $('.formset-row').each(function(index) {
+            $(this).find('.item-number').text(index + 1);
+        });
+    }
+
+    // Add item button click handler
+    addButton.click(function() {
+        var currentForms = parseInt(totalForms.val());
+        var newForm = formsetContainer.children('.formset-row:last').clone(true);
+
+        newForm.find(':input').each(function() {
+            updateElementIndex(this, currentForms);
+            if ($(this).is('input[type="text"], input[type="number"], textarea')) {
+                $(this).val('');
+            } else if ($(this).is('select')) {
+                $(this).val('');
+            } else if ($(this).is('input[type="checkbox"]')) {
+                $(this).prop('checked', false);
+            }
+        });
+
+        newForm.find('input[type="hidden"][name$="-id"]').val('');
+        newForm.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', false).val('off');
+
+        newForm.show();
+
+        formsetContainer.append(newForm);
+        totalForms.val(currentForms + 1);
+        updateItemNumbers();
+        noProductErrorDiv.hide();
+    });
+
+    // Remove item button click handler
+    formsetContainer.on('click', '.remove-item', function() {
+        var row = $(this).closest('.formset-row');
+        var deleteInput = row.find('input[type="checkbox"][name$="-DELETE"]');
+
+        if (deleteInput.length > 0) {
+            deleteInput.prop('checked', true);
+            row.hide();
+        } else {
+            row.remove();
+        }
+        updateItemNumbers();
+
+        // Show error if no active forms left
+        if ($('.formset-row:visible').not(':has(input[name$="-DELETE"]:checked)').length === 0) {
+            noProductErrorDiv.show();
+        } else {
+            noProductErrorDiv.hide();
+        }
+    });
+
+    updateItemNumbers();
+
+    // Form submission validation: Require at least one product AND all quantity & unit cost required
+    $('#stock-in-form').on('submit', function(e) {
+        var activeForms = $('.formset-row:visible').not(':has(input[name$="-DELETE"]:checked)');
+        var activeProductCount = activeForms.length;
+        var valid = true;
+
+        if (activeProductCount === 0) {
+            noProductErrorDiv.show();
+            $('html, body').animate({
+                scrollTop: noProductErrorDiv.offset().top - 50
+            }, 500);
+            e.preventDefault();
+            return false;
+        }
+
+        // Check required fields quantity_added and unit_cost_price for each active form
+        activeForms.each(function() {
+            var qty = $(this).find('input[name$="-quantity_added"]').val();
+            var cost = $(this).find('input[name$="-unit_cost_price"]').val();
+
+            if (!qty || parseFloat(qty) <= 0) {
+                showCustomMessage('Quantity is required and must be greater than zero for all products.');
+                valid = false;
+                return false; // break .each
+            }
+            if (cost === "" || cost === null || parseFloat(cost) < 0) {
+                showCustomMessage('Unit Cost is required and cannot be negative for all products.');
+                valid = false;
+                return false;
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
+            return false;
+        }
+
+        noProductErrorDiv.hide();
+        return true;
+    });
+
+
+    // Barcode Scanning Logic
+    let barcodeBuffer = '';
+    let lastKeypressTime = 0;
+    const BARCODE_SCAN_THRESHOLD = 150;
+    const BARCODE_MIN_LENGTH = 6;
+
+    $(document).on('keypress', function(e) {
+        // Ignore input inside input, select, textarea
+        if ($(e.target).is('input, select, textarea')) {
+            return;
+        }
+
+        let currentTime = new Date().getTime();
+
+        if (currentTime - lastKeypressTime > BARCODE_SCAN_THRESHOLD) {
+            barcodeBuffer = '';  // reset buffer if delay too long
+        }
+
+        lastKeypressTime = currentTime;
+
+        if (e.which === 13) {  // Enter key pressed, treat as end of barcode scan
+            if (barcodeBuffer.length >= BARCODE_MIN_LENGTH) {
+                processBarcode(barcodeBuffer);
+            }
+            barcodeBuffer = '';
+        } else {
+            barcodeBuffer += String.fromCharCode(e.which);
+        }
+    });
+
+    function processBarcode(code) {
+        $.ajax({
+            url: "{% url 'api_product_lookup_by_barcode' %}",
+            method: 'POST',
+            data: {
+                'barcode': code,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.status === 'success' && response.product) {
+                    addOrUpdateProduct(response.product);
+                    showCustomMessage('Product "' + response.product.name + '" added. Please confirm quantity and unit cost.');
+                } else {
+                    showCustomMessage('Product with barcode "' + code + '" not found.');
+                }
+            },
+            error: function() {
+                showCustomMessage('Error processing barcode lookup.');
+            }
+        });
+    }
+
+    // Find the last visible formset row that is NOT deleted
+    // If last row has product selected, add a new blank row before adding product
+    // Then fill product select, quantity = 1, unit_cost_price if given
+    function addOrUpdateProduct(product) {
+        let activeRows = $('.formset-row').filter(function() {
+            return !$(this).find('input[name$="-DELETE"]').prop('checked');
+        });
+
+        let lastRow = activeRows.last();
+
+        // If lastRow product select has a value, add new blank row
+        let productSelect = lastRow.find('select[name$="-product"]');
+        if (productSelect.val()) {
+            addButton.click();
+            activeRows = $('.formset-row').filter(function() {
+                return !$(this).find('input[name$="-DELETE"]').prop('checked');
+            });
+            lastRow = activeRows.last();
+            productSelect = lastRow.find('select[name$="-product"]');
+        }
+
+        // Set product select by value, trigger change for dependent logic if any
+        productSelect.val(product.id).trigger('change');
+
+        // Set quantity to 1 if empty or <= 0
+        let qtyInput = lastRow.find('input[name$="-quantity_added"]');
+        if (!qtyInput.val() || parseInt(qtyInput.val()) <= 0) {
+            qtyInput.val(1);
+        }
+
+        // Set unit cost price if available
+        let costInput = lastRow.find('input[name$="-unit_cost_price"]');
+        if (product.unit_cost_price) {
+            costInput.val(product.unit_cost_price);
+        }
+
+        costInput.focus();
+
+        noProductErrorDiv.hide();
+    }
+
+    // Initialize item numbers on page load
+    updateItemNumbers();
+});
+</script>
+
+{% endblock %}

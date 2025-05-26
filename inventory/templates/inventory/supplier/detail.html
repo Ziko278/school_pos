@@ -1,0 +1,291 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block 'main' %}
+<div class="col-lg-12 grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">ACTIONS:
+                <a class="btn btn-warning" href="{% url 'supplier_edit' supplier.id %}" title="Edit Supplier"><i
+                        class="bi bi-pencil-square"></i></a>
+                <a class="btn btn-danger" href="{% url 'supplier_delete' supplier.id %}" title="Delete Supplier"><i
+                        class="bi bi-trash"></i></a>
+
+                <button class="btn btn-danger" onclick="window.history.back()" title="Go Back"><i
+                        class="bi bi-arrow-left"></i></button>
+
+            </h4>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-target="#profile-overview" data-bs-toggle="tab">SUPPLIER DATA</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-target="#profile-settings" data-bs-toggle="tab">SHOPPING HISTORY</a>
+                    </li>
+
+
+                </ul>
+
+                <div class="tab-content pt-2">
+                    <div class="tab-pane fade show active profile-overview" id="profile-overview">
+
+                        <div class="col-12 grid-margin">
+                            <div class="row">
+                            <div class="col-md-6">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{ supplier|title }}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Supplier Name</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-6">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle bg-success d-flex align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{ supplier.contact_person|title }}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Contact Person</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-warning align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{ supplier.phone_number }}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Phone Number</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-danger align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{supplier.email|lower}}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Email</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{{ supplier.address }}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Address</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                            <div class="card">
+                                <div class="card-body" style="padding:20px">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="card-title"> SUPPLIER SUPPLIERS </p>
+
+                                            <div class="row">
+
+                                                <div class="col-md-8">
+
+                                                    <p> Number: {{supplier.mobile}} </p>
+                                                    <p>Email: {{supplier.email|lower}} </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="tab-pane fade pt-3" id="profile-settings">
+                        <h5 class="card-title">Class Attendance Record</h5>
+                        <div class="row">
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.total_attendance }} {%
+                                                    else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Total Class Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle bg-success d-flex align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.present_attendance }}
+                                                    {% else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Present Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-warning align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.late_attendance }} {%
+                                                    else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Late Class Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-danger align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.absent_attendance }}
+                                                    {% else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Absent Class Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.last_attendance_date
+                                                    }} {% else %} {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">LAst Attendance Taken</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-success align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.last_present_date|date
+                                                    }} {% else %} {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Last Date Present</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+<style>
+    label {
+        width: 90px
+    }
+    .info {
+        margin-left:10px
+    }
+</style>
+
+<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+{%endblock %}

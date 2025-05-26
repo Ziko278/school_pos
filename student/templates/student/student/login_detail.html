@@ -1,0 +1,54 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+
+<div class="col-lg-12 grid-margin stretch-card">
+
+      <div class="card-body">
+           {% if is_class %}
+              <h4 class="card-title text-center">List of Student in {{ student_class|title}} {{class_section|title}}</h4>
+          {% else %}
+              <h4 class="card-title text-center">List of Student
+
+              </h4>
+          {% endif %}
+          <form action="" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="student_class" value="{{student_class.id}}">
+              <input type="hidden" name="class_section" value="{{class_section.id}}">
+              <input type="submit" value="Download File" class="btn btn-primary" >
+          </form>
+          <div class="table-responsive">
+              <table class="table table-striped table-hover table-borderless datatable">
+                  <thead>
+                      <tr>
+                          <th> S/N </th>
+                          <th> Fullname </th>
+                          <th class="text-center"> Username </th>
+                          <th class="text-center"> Password </th>
+
+                      </tr>
+                  </thead>
+                  <tbody>
+                  {% if student_list %}
+                  {% for student in student_list %}
+                      <tr>
+                          <td> <img class="rounded-circle" style="width:50px;height:50px" {% if student.image %} src="{{ student.image.url }}" {% else %} src="{% static 'admin_dashboard/images/default_image.jpg' %}" {% endif %}/>
+                          <td> {{ student|title }}  </td>
+                          <td class="text-center">  {{ student.registration_number }}</td>
+                          <th class="text-center">{{ student.student_account.default_password }}  </th>
+
+                      </tr>
+                  {% endfor %}
+                  {% else %}
+                  <tr><td colspan="6"><h3 class="text-center">No Student is currently registered</h3></td></tr>
+
+                  {% endif %}
+                  </tbody>
+              </table>
+
+          </div>
+      </div>
+  </div>
+
+{% endblock %}

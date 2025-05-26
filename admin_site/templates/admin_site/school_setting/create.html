@@ -1,0 +1,67 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% block 'main' %}
+
+<form action="" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="row">
+
+        <div class="col-12">
+            <div class="card profile-card card-bx m-b30">
+                <div class="card-header">
+                    <h6 class="title">School Setting</h6>
+                </div>
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-6 m-b30">
+                                <br>
+                                <label class="form-label">Allow Student Debt</label>
+                                {{ form.allow_student_debt }}
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <br>
+                                <label class="form-label">Auto Low Balance Notification</label>
+                                {{ form.auto_low_balance_notification }}
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <br>
+                                <label class="form-label">Max Student Debt</label>
+                                {{ form.max_student_debt }}
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <br>
+                                <label class="form-label">Low Balance Threshold</label>
+                                {{ form.low_balance }}
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <br>
+                                <label class="form-label">Allow Refund</label>
+                                {{ form.allow_refund }}
+                            </div>
+
+                            <div class="col-sm-6 m-b30">
+                                <br>
+                                <label class="form-label">Auto Generate Student ID</label>
+                                {{ form.auto_generate_student_id }}
+                            </div>
+
+
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <input class="btn btn-primary" type="submit" value="SAVE" />
+
+                    </div>
+
+            </div>
+        </div>
+    </div>
+
+</form>
+{% endblock %}

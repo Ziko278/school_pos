@@ -1,0 +1,152 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">STUDENT EDIT: {{ student|title }}
+                    <button class="btn btn-danger" onclick="window.history.back()" style="float:right"><i
+                            class="bi bi-arrow-left"></i>
+                </h4>
+                {% if form.errors %}
+                <h5 class="text-danger">{{form.errors}}</h5>
+                {% endif %}
+                <form action="" class="row g-3 needs-validation" enctype="multipart/form-data" method="POST" novalidate>
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Surname <span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.surname}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Last Name <span style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.last_name}}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label"> Class<span
+                                        style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    <select name="student_class" class="form-control" id="id_student_class">
+                                        <option value="">----------</option>
+                                        {% for class in class_list %}
+                                        <option value="{{class.id}}" {% if class == student.student_class %} selected {% endif %} section="<option value=''>----------</option>
+                                        {% for section in class.section.all %}
+                                        <option value='{{section.id}}'>{{section.name|upper}}</option>
+                                        {% endfor %}
+                                        ">
+                                            {{class.name|upper}}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Class Section <span style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    <select name="class_section" class="form-control" id="id_class_section">
+                                        <option value="">----------</option>
+
+                                                                {% for class in class_list %}
+                                                                    {% if class == student.student_class %}
+                                                                        {% for section in class.section.all %}
+                                                                            <option value="{{section.id}}" {% if section == student.class_section %} selected {% endif %}>{{ section }}</option>
+                                                                        {% endfor %}
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Reg No</label>
+                                <div class="col-sm-8">
+                                    <input type="text" name="registration_number" class="form-control"
+                                           {% if student_setting.auto_generate_student_id %} disabled {% else %} required {% endif %}>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Gender <span style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.gender}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Parent Phone Number <span style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.mobile}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Parent Email <span style="font-size:20px;color:red">*</span></label>
+                                <div class="col-sm-8">
+                                    {{form.email}}
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row"></div>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <br/>
+                            <button class="btn btn-primary btn-rounded" style="width:150px;margin:10px">Update
+                                Student
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
+<script>
+    $(document).ready(function(){
+        $('#id_student_class').change(function(){
+            section = $('option:selected', this).attr('section')
+            $('#id_class_section').html(section)
+        })
+    })
+
+</script>
+
+
+{%endblock %}

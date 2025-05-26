@@ -1,0 +1,227 @@
+{% extends 'admin_dashboard/layout.html' %}
+{% load static %}
+{% load humanize %}
+{% load fee_custom_filters %}
+{% block 'main' %}
+{% if form.errors %}
+<style>
+	td, th{
+		border:1px solid black;
+		padding-left:5px;
+		text-align:center;
+		font-family:courier
+	}
+	.student-summary span{
+		margin-right:20px
+	}
+	.student-info span {
+		margin-right:30px
+	}
+
+	.student-info {
+		font-size: 14px;
+		font-family: sans serif
+	}
+	{% for subject in subject_list %}
+		#bar{{forloop.counter}} {
+			{% for key, value in result.result.items %}
+				{% if subject.id|stringformat:"i" == key %}
+					 height:{{ value.total|floatformat }}%;
+					 border: 1px solid red;
+
+				{% endif %}
+			{% endfor %}
+		}
+	{% endfor %}
+	th {
+		height: 20px;
+		font-size: 12px;
+		padding:0px
+	}
+
+
+
+</style>
+        <h5 class="text-danger">{{form.errors}}</h5>
+        {% endif %}
+<div class="col-lg-12 grid-margin stretch-card  non-printable">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">Name: {{ fee_payment.student|title }} <br />
+                Reg No: {{ fee_payment.student.registration_number|upper }} <br />
+                Class: {% if fee_payment.student.student_class %} {{ fee_payment.student.student_class|upper }} {{ fee_payment.student.class_section|upper }} {% endif %} <br><br>
+                {% if fee_payment.payment_proof %} <a href="{{fee_payment.payment_proof.url}}" class="btn btn-primary btn-sm" target="_blank">View Payment Proof</a> {% else %} No Payment Proof Uploaded {% endif %}
+                <img class="rounded-circle" style="margin-top:-70px;display:inline;float:right;width:100px;height:100px;border-radius:5px;" {% if fee_payment.student.image %} src="{{ fee_payment.student.image.url }}" {% else %} src="{% static 'admin_dashboard/images/default_image.jpg' %}" {% endif %} /></h4>
+
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered  non-printable">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Payment Detail</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#current-payment">Payments Receipt</button>
+                    </li>
+
+                </ul>
+
+                <div class="tab-content pt-2">
+                    <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                        <h5 class="card-title">Fee Payment Detail for {{fee_payment.student|title}}, {% if fee_payment.student.student_class %} {{ fee_payment.student.student_class }} {{ fee_payment.student.class_section }} - {% endif %} {{ fee_payment.term|title }} {{ fee_payment.session }} Session </h5>
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Fee</th>
+                                <th scope="col">Amount Paid</th>
+                                <th scope="col">Total Paid</th>
+                                <th scope="col">Balance</th>
+
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% if fee_payment.fees.all %}
+                            {% for payment in fee_payment.fees.all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ payment.fee.fee|title }}</td>
+                                <td>{{ payment.amount }}</td>
+                                <td>{{ payment.fee|get_amount_paid:fee_payment.student.id }}</td>
+                                <td>{{ payment.fee|get_fee_balance:fee_payment.student.id }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% endif %}
+                            </tbody>
+                        </table>
+                        <h4 class="card-title">Amount: {{ amount_in_word|title }} Naira Only ({{fee_payment.amount|intcomma}})</h4>
+                    </div>
+
+                    <div class="tab-pane fade profile-edit pt-3" id="current-payment">
+
+                        <div id="download-detailed-receipt">
+                             <p>
+                                {% if fee_payment.status != "pending" or 1 %}
+                                <button type="button" title="Print Receipt" id="download-summary-receipt-button" data-bs-toggle="modal" data-bs-target="#bulk-payment" class="btn btn-primary"><i class="bi bi-printer"></i> </button>
+                                {% endif %}
+                            </p>
+                            <div style="background-color:white;border:2px solid skyblue;">
+                                <div class="" style="color:black;font-family:cursive;background-color:white;border-bottom:2px solid black;height:135px">
+                                    <div class="row">
+
+                                        <div class="col-9" style="padding:15px">
+                                            <h4 class="text-center" style="color:grey;font-family:serif"><b>{{ general_setting.name|upper }}</b></h4>
+                                            <h6 class="text-center" style="color:grey;font-size:14px;margin-top:10px"><b>...{{ general_setting.motto|title }}</b></h6>
+                                            <h6 class="text-center" style="color:grey">{{ general_setting.address|upper }}</h6>
+                                            <p class="text-center" style="color:grey;margin-bottom:10px;font-size:13px">{{ general_setting.mobile_1 }} | 
+						{{ general_setting.website|lower }} | {{ general_setting.email|lower }} </p>
+                                        </div>
+
+                                        <div class="col-3">
+                                             <image src="{{ general_setting.logo.url }}" style="width:100%;height:133px;border-radius:0px;" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-success" style="color:white;height:30px;border-bottom:1px solid black;border-top:0px solid black;">
+                                    <p class="text-center" style="font-weight:bold;font-family:cursive">Fee Payment Receipt </p>
+                                </div>
+
+                                <div style="padding:10px;font-family:cursive">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            No: {{ fee_payment.reference|upper }}
+                                        </div>
+                                        <div class="col-6">
+                                            Date: {{ fee_payment.date|date }}
+                                        </div>
+                                        <div class="col-12">
+                                            Name: {{ fee_payment.student|title }}
+                                        </div>
+
+                                        <div class="col-6">
+                                            Session: {{ fee_payment.session}}
+                                        </div>
+                                        <div class="col-6">
+                                            Term: {{ fee_payment.term|upper }}
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div>
+                                    <table class="table">
+                                    <thead>
+                                      <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Fee</th>
+                                        <th scope="col">Amount</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for payment in fee_payment.fees.all %}
+                                      <tr>
+                                            <th scope="row">{{ forloop.counter }}</th>
+                                            <td>{{ payment.fee.fee|title }}</td>
+                                            <td>₦{{ payment.amount|intcomma }}</td>
+                                      </tr>
+
+                                    {% endfor %}
+                                     <tr>
+                                        <td colspan="3" style="color:white;background:white">hi</td>
+                                      </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th>Total</th>
+                                        <th>₦{{ fee_payment.amount|intcomma }}</th>
+                                    </tr>
+                                    </tbody>
+                                  </table>
+                                    <h4 class="card-title" style="padding:10px">{{ amount_in_word|title }} Naira Only</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+<script type="text/javascript">
+	$(document).on('click','#download-detail-receipt-button', function(){
+		pdfjs = $('#download-detailed-receipt')
+	    var elementToPrint = $('#download-detailed-receipt').clone();
+            var printWindow = window.open("", "_blank");
+		printWindow.document.write('<html><head><title>Printed Content</title>');
+            printWindow.document.write('<style>' + getComputedStyle(document.body).cssText + '</style>'); // Include styles from the current page
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(elementToPrint[0].outerHTML);
+            printWindow.document.write('</body></html>');
+		printWindow.document.close();
+            printWindow.print();
+    })
+</script>
+
+<script type="text/javascript">
+	$(document).on('click','#download-summary-receipt-button', function(){
+		//let pdfjs = document.querySelector('#download-summary-receipt')
+		window.print();
+
+    })
+</script>
+{%endblock %}

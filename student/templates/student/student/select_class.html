@@ -1,0 +1,146 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">CHECK CLASS STUDENT</h4>
+                <form class="form-sample" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Select a Class</label>
+
+                                <div class="col-sm-8">
+                                    <select class="form-control" id="id_student_class" name="student_class" required>
+                                        <option value="">----------</option>
+                                        {% for class in class_list %}
+                                        <option section="<option value=''>----------</option>
+                      {% for section in class.section.all %}
+                      <option value='{{section.id}}'>{{section.name|upper}}</option>
+                      {% endfor %}
+                      " value="{{class.id}}">
+
+                                            {{class.name|upper}}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Select Section</label>
+
+                                <div class="col-sm-8">
+                                    <select class="form-control" id="id_class_section" name="class_section" required>
+                                        <option value="">----------</option>
+                                    </select><br/>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <div class="col-sm-12" style="float:right">
+                                    <br/>
+                                    <button class="btn btn-success btn-rounded" style="width:150px;margin:10px">
+                                        Proceed
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">CHECK CLASS STUDENT LOGIN DETAILS</h4>
+                <form action="{% url 'student_login_detail' %}" class="form-sample">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Select a Class</label>
+
+                                <div class="col-sm-8">
+                                    <select class="form-control" id="id_student_class2" name="student_class" required>
+                                        <option value="">----------</option>
+                                        {% for class in class_list %}
+                                        <option section="<option value=''>----------</option>
+                      {% for section in class.section.all %}
+                      <option value='{{section.id}}'>{{section.name|upper}}</option>
+                      {% endfor %}
+                      " value="{{class.id}}">
+
+                                            {{class.name|upper}}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <label class="col-sm-4 col-form-label">Select Section</label>
+
+                                <div class="col-sm-8">
+                                    <select class="form-control" id="id_class_section2" name="class_section" required>
+                                        <option value="">----------</option>
+                                    </select><br/>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group row">
+                                <div class="col-sm-12" style="float:right">
+                                    <br/>
+                                    <button class="btn btn-success btn-rounded" style="width:150px;margin:10px">
+                                        Proceed
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
+<script>
+    $(document).ready(function(){
+      $('#id_student_class').change(function(){
+        section = $('option:selected', this).attr('section')
+        $('#id_class_section').html(section)
+      })
+
+      $('#id_student_class2').change(function(){
+        section = $('option:selected', this).attr('section')
+        $('#id_class_section2').html(section)
+      })
+
+      $('#id_student_class_list').change(function(){
+        section = $('option:selected', this).attr('section')
+        $('#id_class_section_list').html(section)
+      })
+    })
+
+</script>
+{% endblock %}

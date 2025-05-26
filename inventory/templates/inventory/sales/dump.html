@@ -1,0 +1,253 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %}
+{% block 'main' %}
+<div class="card">
+    <div class="card-body">
+        <h3 class="card-title text-center">ORDER PLACEMENT</h3>
+        <div class="alert alert-info" style="padding:5px;height:40px;margin-bottom:5px;">
+            <strong>Tip:</strong>
+            Scan Student Barcode or Product Barcode for faster sale. You can also search both manually
+        </div>
+    </div>
+
+    <form action="" class="px-4" id="order-form" method="POST" style="margin-top:-10px;">
+        {% csrf_token %}
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <input autocomplete="off" class="form-control" id="student-search" name="student_search"
+                       placeholder="Student Name/Reg Number" type="search">
+                <input id="student-id" name="student_id" type="hidden">
+            </div>
+            <div class="col-md-6">
+                <p><b>Student: <span id="student_name"></span> <span id="student_reg_no"></span></b></p>
+                <p style="margin-top:-10px"><b>Class: <span id="student_class"></span></b></p>
+                <p style="margin-top:-10px"><b>Wallet: ₦<span id="wallet_balance"></span> / Debt: ₦<span
+                        id="wallet_debt"></span></b></p>
+            </div>
+            <div class="col-md-3 text-center">
+                <img alt="Student Image" class="img-fluid rounded" id="student_image" src="" style="max-height:80px;">
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body px-0">
+                <table class="table" id="order-table">
+                    <thead>
+                    <tr>
+                        <th class="text-center">Action</th>
+                        <th class="text-center">Product</th>
+                        <th class="text-center">Qty Remaining</th>
+                        <th class="text-center">Unit Price (₦)</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-center">Total (₦)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr class="order-row">
+                        <td class="text-center">
+                            <span class="text-danger remove-row" style="cursor:pointer;"><b>X</b></span>
+                        </td>
+                        <td class="text-center">
+                            <input class="form-control product-search" placeholder="Search product" type="text">
+                            <input class="product-id" name="products[0][product_id]" type="hidden">
+                        </td>
+                        <td class="text-center qty-remaining"></td>
+                        <td class="text-center unit-price"></td>
+                        <td class="text-center">
+                            <input class="form-control quantity-input" min="1" name="products[0][quantity]" required
+                                   style="width:80px;" type="number" value="1">
+                        </td>
+                        <td class="text-center total-price"></td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="row">
+                    <div class="form-group col-md-3">
+                        <label for="grand_total">Grand Total (₦)</label>
+                        <input class="form-control" id="grand_total" name="grand_total" readonly type="text">
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <button class="btn btn-primary btn-rounded" style="width:150px;" type="submit">Place Order</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="{% static 'admin_site/scripts/jquery.js' %}"></script>
+<script>
+
+    $(function(){
+      // API endpoints
+      const studentSearchUrl = "{% url 'api_student_search' %}";      // GET ?q=
+      const productSearchUrl = "{% url 'api_product_search' %}";      // GET ?q=
+      const barcodeLookupUrl = "{% url 'api_barcode_lookup' %}";      // POST {barcode}
+      const maxDebt = {{ settings.max_student_debt }};
+
+
+      // Typeahead for student
+      $('#student-search').autocomplete({
+
+        source: function(request, response) {
+          $.getJSON(studentSearchUrl, {q: request.term}, response);
+        },
+        select: function(event, ui) {
+           alert()
+          $('#student-id').val(ui.item.id);
+          $('#student_name').text(ui.item.name);
+          $('#student_reg_no').text(ui.item.reg_number);
+          $('#student_class').text(ui.item.student_class);
+          $('#wallet_balance').text(ui.item.wallet_balance.toFixed(2));
+          $('#wallet_debt').text(ui.item.wallet_debt.toFixed(2));
+          $('#student_image').attr('src', ui.item.image_url);
+          return false;
+        },
+        minLength: 2
+      });
+
+      // Typeahead for product rows
+      function bindProductAutocomplete(row) {
+        row.find('.product-search').autocomplete({
+          source: function(request, response) {
+            $.getJSON(productSearchUrl, {q: request.term}, response);
+          },
+          select: function(event, ui) {
+            $(this).prop('readonly', true).val(ui.item.name);
+            const container = $(this).closest('tr');
+            container.find('.product-id').val(ui.item.id);
+            container.find('.qty-remaining').text(ui.item.qty_remaining);
+            container.find('.unit-price').text(ui.item.selling_price.toFixed(2));
+            updateRowTotal(container);
+            addEmptyRowIfNeeded();
+            return false;
+          },
+          minLength: 1
+        });
+      }
+
+      // Initialize first row
+      bindProductAutocomplete($('.order-row'));
+
+      // Add empty row
+      function addEmptyRowIfNeeded() {
+        const emptyRows = $('#order-table tbody tr').filter(function(){
+          return !$(this).find('.product-id').val();
+        });
+        if(!emptyRows.length) {
+          const idx = $('#order-table tbody tr').length;
+          const newRow = $('.order-row:first').clone();
+          newRow.find('input').val('');
+          newRow.find('.qty-remaining, .unit-price, .total-price').text('');
+          newRow.find('input.quantity-input').val(1);
+          newRow.attr('data-index', idx);
+          newRow.find('.product-id').attr('name', `products[${idx}][product_id]`);
+          newRow.find('.quantity-input').attr('name', `products[${idx}][quantity]`);
+          $('#order-table tbody').append(newRow);
+          bindRowEvents(newRow);
+        }
+      }
+
+      // Remove row
+      $('#order-table').on('click', '.remove-row', function(){
+        $(this).closest('tr').remove();
+        recalcIndices();
+        calculateGrandTotal();
+      });
+
+      // Quantity change
+      $('#order-table').on('input', '.quantity-input', function(){
+        const row = $(this).closest('tr');
+        updateRowTotal(row);
+        calculateGrandTotal();
+      });
+
+      // Update row total
+      function updateRowTotal(row) {
+        const qty = parseInt(row.find('.quantity-input').val())||0;
+        const price = parseFloat(row.find('.unit-price').text())||0;
+        row.find('.total-price').text((qty*price).toFixed(2));
+        calculateGrandTotal();
+      }
+
+      // Grand total
+      function calculateGrandTotal() {
+        let sum = 0;
+        $('#order-table .total-price').each(function(){ sum += parseFloat($(this).text())||0; });
+        $('#grand_total').val(sum.toFixed(2));
+      }
+
+      // Recalc name indices after remove
+      function recalcIndices() {
+        $('#order-table tbody tr').each(function(i){
+          $(this).find('.product-id').attr('name', `products[${i}][product_id]`);
+          $(this).find('.quantity-input').attr('name', `products[${i}][quantity]`);
+        });
+      }
+
+      // Barcode Scanning
+      let barcodeBuffer = '';
+      let lastKey = 0;
+      const THRESHOLD = 150;
+      $(document).on('keypress', function(e){
+        if($(e.target).is('input, select, textarea')) return;
+        const now = Date.now();
+        if(now - lastKey > THRESHOLD) barcodeBuffer = '';
+        lastKey = now;
+        if(e.which === 13) {
+          if(barcodeBuffer.length>=6) lookupBarcode(barcodeBuffer);
+          barcodeBuffer='';
+        } else barcodeBuffer += String.fromCharCode(e.which);
+      });
+
+      function lookupBarcode(code) {
+        $.post(barcodeLookupUrl, {barcode: code, csrfmiddlewaretoken: '{{ csrf_token }}'})
+          .done(function(resp){
+            if(resp.type==='student') {
+              populateStudent(resp.data);
+            } else if(resp.type==='product') {
+              populateProductRow(resp.data);
+            } else showAlert('No match for barcode '+code);
+          }).fail(()=>showAlert('Barcode lookup error'));
+      }
+
+      function populateStudent(data) {
+        $('#student-id').val(data.id);
+        $('#student_name').text(data.name);
+        $('#student_reg_no').text(data.reg_number);
+        $('#student_class').text(data.student_class);
+        $('#wallet_balance').text(data.wallet_balance.toFixed(2));
+        $('#wallet_debt').text(data.wallet_debt.toFixed(2));
+        $('#student_image').attr('src', data.image_url);
+      }
+
+      function populateProductRow(item) {
+        const empty = $('#order-table tbody tr').filter((_,r)=>!$(r).find('.product-id').val()).first();
+        if(empty.length===0) { addEmptyRowIfNeeded(); }
+        const row = $('#order-table tbody tr').filter((_,r)=>!$(r).find('.product-id').val()).first();
+        row.find('.product-search').prop('readonly',true).val(item.name);
+        row.find('.product-id').val(item.id);
+        row.find('.qty-remaining').text(item.qty_remaining);
+        row.find('.unit-price').text(item.selling_price.toFixed(2));
+        row.find('.quantity-input').val(1);
+        updateRowTotal(row);
+      }
+
+      function showAlert(msg) {
+        alert(msg);
+      }
+
+      // Validate wallet/debt before submit
+      $('#order-form').on('submit', function(e){
+        const total = parseFloat($('#grand_total').val())||0;
+        const balance = parseFloat($('#wallet_balance').text())||0;
+        const debt = parseFloat($('#wallet_debt').text())||0;
+        if(total > balance + (maxDebt - debt)){
+          e.preventDefault(); showAlert('Insufficient funds or max debt exceeded');
+        }
+      });
+    });
+</script>
+{% endblock %}

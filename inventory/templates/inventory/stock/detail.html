@@ -1,0 +1,82 @@
+{% extends 'admin_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+
+<div class="row">
+    <div class="col-12 grid-margin">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">STOCK RECEIPT #{{ stock_in_summary.id }} DETAILS
+
+                </h4>
+
+                <div class="card-header bg-primary text-white mb-3">
+                    <h5 class="mb-0">Receipt Summary</h5>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>Receipt Date:</strong> {{ stock_in_summary.date|date:"F d, Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Total Items:</strong> {{ stock_in_items|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Total Receipt Cost:</strong> ₦{{ total_receipt_cost|floatformat:2 }}</p>
+                    </div>
+                </div>
+
+                <div class="card-header bg-primary text-white mb-3 mt-4">
+                    <h5 class="mb-0">Received Products</h5>
+                </div>
+                {% if stock_in_items %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Quantity Received</th>
+                                <th>Unit Cost</th>
+                                <th>Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in stock_in_items %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.quantity_added|floatformat:2 }}</td>
+                                <td>₦{{ item.unit_cost_price|floatformat:2 }}</td>
+                                <td>₦{{ item.total_cost_price|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="4" class="text-end">Grand Total:</th>
+                                <th>₦{{ total_receipt_cost|floatformat:2 }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning" role="alert">
+                    No products were recorded for this stock receipt.
+                </div>
+                {% endif %}
+
+                <div class="row mt-4">
+                    <div class="col-md-12 text-center">
+                        <a href="{% url 'product_stock_in' %}" class="btn btn-primary btn-rounded">Receive More Stock</a>
+                        <button class="btn btn-secondary btn-rounded" onclick="window.print()">Print Receipt</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,335 @@
+{% extends 'admin_site/layout.html' %}
+{% load static %} 
+{% load humanize %}
+
+{% block 'main' %} 
+<div class="col-lg-12 grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">ACTIONS:
+                <a title="Edit Student" href="{% url 'student_edit' student.id %}" class="btn btn-warning"><i class="bi bi-pencil-square"></i></a>
+                <a title="Delete Student" href="{% url 'student_delete' student.id %}" class="btn btn-danger"><i class="bi bi-trash"></i></a>
+
+		        <button title="Go Back" onclick="window.history.back()" class="btn btn-danger"><i class="bi bi-arrow-left"></i></button>
+                <a title="Download ID Front" class="btn btn-primary" onclick="downloadID('front')">
+    <i class="bi bi-person-badge"></i> ID Front
+</a>
+
+<a title="Download ID Back (Barcode)" class="btn btn-secondary" onclick="downloadID('back')">
+    <i class="bi bi-upc-scan"></i> ID Back
+</a>
+
+            </h4>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">BIO DATA</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings">SHOPPING HISTORY</a>
+                    </li>
+
+
+                </ul>
+
+                <div class="tab-content pt-2">
+                    <div class="tab-pane fade show active profile-overview" id="profile-overview">
+
+                        <div class="col-12 grid-margin">
+                            <div class="card">
+                                <div class="card-body" style="padding:20px">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="card-title"> STUDENT INFORMATION </p>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <image {% if student.image %} src="{{ student.image.url }}" {% else %} src="{% static 'admin_dashboard/images/default_image.jpg' %}" {% endif %} style="width:100px;height:100px;border-radius:5px;" />
+                                                    <p style="margin-top:5px;"><span class="text-center {% if student.status|lower == 'active' %} text-success {% else %} text-danger {% endif %} "> {{student.status|upper}} </span> </p>
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <p>{{ student.surname|title }} {% if student.middle_name %} {{ student.middle_name|title }} {% endif %} {{ student.last_name|title }}</p>
+                                                    <p>{% if student.registration_number %} {{student.registration_number|upper}} {% else %} NO REGISTRATION NUMBER {% endif %}</p>
+                                                    <p>Parent Number: {{student.mobile}} </p>
+                                                    <p>Parent Email: {{student.email|lower}} </p>
+                                                    <p>Gender: {{student.gender|title}} </p>
+                                                    <p><b>Wallet Balance: ₦{{student.student_wallet.balance|intcomma}} </b></p>
+                                                    <p><b>Debt: ₦{{student.student_wallet.debt|intcomma}} </b></p>
+                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <img src="/{{student.barcode}}" style="width:400px;height:250px" alt="">
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="tab-pane fade pt-3" id="profile-settings">
+			<h5 class="card-title">Class Attendance Record</h5>
+                        <div class="row">
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.total_attendance }} {% else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Total Class Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle bg-success d-flex align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.present_attendance }} {% else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Present Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-warning align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.late_attendance }} {% else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Late Class Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-danger align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.absent_attendance }} {% else %} 0 {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Absent Class Attendance</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.last_attendance_date }} {% else %} {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">LAst Attendance Taken</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xxl-4 col-md-4">
+                                <div class="card info-card sales-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title"></h5>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon rounded-circle d-flex bg-success align-items-center justify-content-center">
+                                                <i class="bi bi-alarm-fill text-white"></i>
+                                            </div>
+                                            <div class="ps-3">
+                                                <h6>{% if class_attendance %} {{ class_attendance.last_present_date|date }} {% else %} {% endif %}</h6>
+                                                <span class="text-muted small pt-2 ps-1">Last Date Present</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<!-- ID Card Front -->
+<div id="id-card-front" style="
+      width: 320px;
+      height: 200px;
+      display: none;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    ">
+  <!-- School Banner -->
+  <div style="
+        background: #004085;
+        color: #fff;
+        padding: 8px 12px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1em;
+      ">
+    {{ school_info.name|title }}
+  </div>
+
+  <!-- Content -->
+  <div style="display: flex; padding: 12px; flex-wrap: wrap;">
+    <!-- Photo -->
+    <div style="flex: 0 0 80px; margin-right: 12px;">
+      <img
+        src="{% if student.image %}{{ student.image.url }}{% else %}{% static 'admin_site/images/default_image.jpg' %}{% endif %}"
+        alt="Photo"
+        style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #004085;"
+      />
+    </div>
+
+    <!-- Info -->
+    <div style="flex: 1 1 calc(100% - 100px);">
+      <p style="margin: 0; font-size:1em; font-weight:600;">
+        {{ student.surname|title }} {{ student.last_name|title }}
+      </p>
+      <p style="margin: 4px 0 0; font-size:0.9em;">
+        Reg No: <span style="font-weight:500;">{{ student.registration_number|upper }}</span>
+      </p>
+      <p style="margin: 4px 0 0; font-size:0.9em;">
+        Class: <span style="font-weight:500;">{{ student.student_class|title }} {{student.class_section|title}}</span>
+      </p>
+      <p style="margin: 4px 0 0; font-size:0.9em;">
+        Phone No: {{ student.mobile }}
+      </p>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- ID Card Back -->
+<div id="id-card-back" style="
+      width: 320px;
+      height: 200px;
+      display: none;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      position: relative;
+    ">
+  <!-- School Name Header -->
+  <div style="
+        background: #004085;
+        color: #fff;
+        padding: 8px 12px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1em;
+      ">
+    {{ school_info.name|title }}
+  </div>
+
+  <!-- Barcode area -->
+  <div style="padding: 12px; text-align: center;">
+    <img
+      src="/{{ student.barcode }}"
+      alt="Barcode"
+      style="max-width: 90%; height: auto; margin-top: 8px;"
+    />
+  </div>
+
+
+
+  <!-- Footer contact -->
+  <div style="
+        background: #e2e6ea;
+        color: #333;
+        text-align: center;
+        padding: 6px;
+        font-size: 0.75em;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+      ">
+    &copy; {{ now|date:"Y" }} {{ school_info|upper }}
+  </div>
+</div>
+
+
+<style>
+    label {
+        width: 90px
+    }
+    .info {
+        margin-left:10px
+    }
+</style>
+
+<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+    async function downloadID(type) {
+        const idCardDiv = document.getElementById(`id-card-${type}`);
+        idCardDiv.style.display = 'block';  // Show temporarily
+
+        const canvas = await html2canvas(idCardDiv);
+        const imgData = canvas.toDataURL('image/png');
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'px',
+            format: [300, 180]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, 300, 180);
+        pdf.save(`student_id_${type}.pdf`);
+
+        idCardDiv.style.display = 'none';  // Hide again
+    }
+</script>
+
+{%endblock %}
