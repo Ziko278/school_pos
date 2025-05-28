@@ -18,8 +18,8 @@ def create_student_account(sender, instance, created, **kwargs):
 
         username = student.registration_number
         parent_username = 'p' + student.registration_number
-        password = User.objects.make_random_password(length=8)
-        parent_password = User.objects.make_random_password(length=8)
+        password = User.make_random_password(length=8)
+        parent_password = User.make_random_password(length=8)
         email = student.email
 
         user = User.objects.create_user(username=username, email=email, password=password)
