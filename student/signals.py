@@ -9,6 +9,11 @@ from admin_site.models import SchoolInfoModel
 from student.models import *
 from django.contrib.auth.models import User
 from student.models import StudentModel, StudentWalletModel
+import secrets
+
+
+def make_random_password(length=10, allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'):
+    return ''.join(secrets.choice(allowed_chars) for i in range(length))
 
 
 @receiver(post_save, sender=StudentModel)
@@ -18,8 +23,8 @@ def create_student_account(sender, instance, created, **kwargs):
 
         username = student.registration_number
         parent_username = 'p' + student.registration_number
-        password = User.make_random_password(length=8)
-        parent_password = User.make_random_password(length=8)
+        password = make_random_password(8)
+        parent_password = make_random_password(8)
         email = student.email
 
         user = User.objects.create_user(username=username, email=email, password=password)
