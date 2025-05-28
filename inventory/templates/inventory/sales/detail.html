@@ -11,6 +11,7 @@
         —  
       {% endif %}
     </p>
+    <p><strong>Staff:</strong> {{ sale.created_by|title }}</p>
     <p><strong>Status:</strong> {{ sale.get_status_display }}</p>
 
     <table class="table mt-3">

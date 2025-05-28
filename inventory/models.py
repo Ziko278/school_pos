@@ -204,6 +204,7 @@ class SaleModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     session = models.ForeignKey(SessionModel, on_delete=models.SET_NULL, null=True, blank=True)
+    created_by = models.ForeignKey(StaffModel, on_delete=models.SET_NULL, null=True, blank=True)  # Who added it
     TERM = (
         ('1st term', '1st TERM'), ('2nd term', '2nd TERM'), ('3rd term', '3rd TERM')
     )

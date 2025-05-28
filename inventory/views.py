@@ -486,6 +486,12 @@ def place_order_view(request):
         total_amount=total_amount,
         total_items=total_items
     )
+    try:
+        created_by = UserProfileModel.objects.get(user=request.user).staff
+        sale.created_by = created_by
+        sale.save()
+    except Exception:
+        pass
 
     # Process each line with FIFO batch consumption
     for product, qty, unit_price in items:
