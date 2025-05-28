@@ -131,6 +131,9 @@ class StudentFundingModel(models.Model):
         ('1st term', '1st TERM'), ('2nd term', '2nd TERM'), ('3rd term', '3rd TERM')
     )
     term = models.CharField(max_length=10, choices=TERM, null=True, blank=True)
+    teller_number = models.CharField(max_length=50, null=True, blank=True)
+    decline_reason = models.CharField(max_length=250, null=True, blank=True)
+    reference = models.CharField(max_length=250, null=True, blank=True)
 
     def __str__(self):
         return f"{self.student.__str__() - self.amount}"
@@ -140,5 +143,7 @@ class StudentFundingModel(models.Model):
             setting = SchoolSettingModel.objects.first()
             self.session = setting.session
             self.term = setting.term
+        if not self.balance:
+            self.balance = StudentWalletModel.objects.get(student=self.student).balance
 
         super(StudentFundingModel, self).save(*args, **kwargs)

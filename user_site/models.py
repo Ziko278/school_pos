@@ -10,6 +10,8 @@ class UserProfileModel(models.Model):
                                  related_name='account')
     student = models.OneToOneField('student.StudentModel', on_delete=models.CASCADE, null=True, blank=True,
                                    related_name='student_account')
+    parent = models.OneToOneField('student.StudentModel', on_delete=models.CASCADE, null=True, blank=True,
+                                   related_name='parent_account')
     reference_id = models.IntegerField()
     reference = models.CharField(max_length=20)
     default_password = models.CharField(max_length=100)

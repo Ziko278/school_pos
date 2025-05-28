@@ -157,6 +157,13 @@
             </a>
         </li>
 
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'view_pending_orders' %}">
+                <i class="bi bi-card-list"></i>
+                <span>Student Order</span>
+            </a>
+        </li>
+
 
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#stud" data-bs-toggle="collapse" href="#">
@@ -269,6 +276,12 @@
                 <li>
                     <a href="{% url 'deposit_index' %}?session={{academic_info.session.id}}&term={{academic_info.term}}">
                         <i class="bi bi-circle"></i><span>Payment History</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'pending_deposit_index' %}?session={{academic_info.session.id}}&term={{academic_info.term}}">
+                        <i class="bi bi-circle"></i><span>Pending Payment</span>
                     </a>
                 </li>
 

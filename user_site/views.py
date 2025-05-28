@@ -58,6 +58,16 @@ def user_sign_in_view(request):
 
                 return redirect(reverse('student_dashboard'))
 
+            elif user_role.parent:
+                login(request, user)
+                messages.success(request, 'welcome back {}'.format(user_role.parent.surname))
+                if remember_me:
+                    request.session.set_expiry(3600 * 24 * 30)
+                else:
+                    request.session.set_expiry(0)
+
+                return redirect(reverse('parent_dashboard'))
+
             else:
                 messages.error(request, 'Unknown Identity, Access Denied')
                 return redirect(reverse('login'))

@@ -2,7 +2,7 @@ import io
 
 from django.contrib.messages.views import messages
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 import json
 from django.core.serializers.json import DjangoJSONEncoder
@@ -231,10 +231,16 @@ def deposit_get_class_students_by_reg_number(request):
 
 def deposit_payment_list_view(request):
     session_id = request.GET.get('session', None)
-    session = SessionModel.objects.get(id=session_id)
+    school_setting = SchoolSettingModel.objects.first()
+    if not session_id:
+        session = school_setting.session
+    else:
+        session = SessionModel.objects.get(id=session_id)
     session_list = SessionModel.objects.all()
     term = request.GET.get('term', None)
-    fee_payment_list = StudentFundingModel.objects.filter(session=session, term=term).order_by('-id')
+    if not term:
+        term = school_setting.term
+    fee_payment_list = StudentFundingModel.objects.filter(session=session, term=term).exclude(status='pending').order_by('-id')
     context = {
         'fee_payment_list': fee_payment_list,
         'session': session,
@@ -242,6 +248,21 @@ def deposit_payment_list_view(request):
         'session_list': session_list
     }
     return render(request, 'student/fee_payment/index.html', context)
+
+
+def pending_deposit_payment_list_view(request):
+    session_id = request.GET.get('session', None)
+    session = SessionModel.objects.get(id=session_id)
+    session_list = SessionModel.objects.all()
+    term = request.GET.get('term', None)
+    fee_payment_list = StudentFundingModel.objects.filter(session=session, term=term, status='pending').order_by('-id')
+    context = {
+        'fee_payment_list': fee_payment_list,
+        'session': session,
+        'term': term,
+        'session_list': session_list
+    }
+    return render(request, 'student/fee_payment/pending.html', context)
 
 
 def deposit_create_view(request, student_pk):
@@ -259,8 +280,6 @@ def deposit_create_view(request, student_pk):
                 deposit.session = setting.session
             if not deposit.term:
                 deposit.term = setting.term
-
-
 
             amount = deposit.amount  # Get amount directly from the saved instance
             messages.success(request, f'Deposit of ₦{amount} successful!')
@@ -301,3 +320,76 @@ def deposit_create_view(request, student_pk):
         'setting': setting
     }
     return render(request, 'student/fee_payment/create.html', context)
+
+
+@transaction.atomic
+def confirm_payment_view(request, payment_id):
+    payment = get_object_or_404(StudentFundingModel, pk=payment_id)
+    student = payment.student # Get the student associated with this payment
+
+    if request.method == 'POST':
+        # Check if the payment is already confirmed or declined
+        if payment.status != 'pending':
+            messages.warning(request, f"Payment is already {payment.status.capitalize()}. Cannot confirm.")
+            # Redirect to a list of payments or the payment detail page
+            return redirect(reverse('pending_deposit_index')) # Replace with your actual URL name
+
+        # Get or create student wallet
+        student_wallet, created = StudentWalletModel.objects.get_or_create(student=student)
+
+        # Apply the payment amount to the wallet balance
+        # Keeping calculations as float as per original deposit_create_view
+        student_wallet.balance += payment.amount
+
+        # Apply debt reduction logic
+        if student_wallet.debt > 0:
+            if student_wallet.balance > student_wallet.debt:
+                student_wallet.balance -= student_wallet.debt
+                student_wallet.debt = 0.0 # Use 0.0 for float consistency
+            else:
+                student_wallet.debt -= student_wallet.balance
+                student_wallet.balance = 0.0 # Use 0.0 for float consistency
+
+        student_wallet.save() # Save the updated wallet
+
+        # Update the payment status and its internal balance field
+        payment.status = 'confirmed'
+        # Replicate the balance update from the original view
+        payment.balance = student_wallet.balance - student_wallet.debt
+        payment.save() # Save the updated payment record
+
+        messages.success(request, f"Payment of ₦{payment.amount} for {student.surname} {student.last_name} confirmed successfully.")
+        return redirect(reverse('deposit_index')) # Replace with your actual URL name
+
+    else:
+        # For GET requests to this URL, you might want to display a confirmation prompt
+        # or just redirect with a message. Assuming redirect for simplicity.
+        messages.info(request, "Please use a POST request to confirm this payment.")
+        return redirect(reverse('pending_deposit_index'))  # Replace with your actual URL name
+
+
+# --- Decline Payment View ---
+@transaction.atomic
+def decline_payment_view(request, payment_id):
+    payment = get_object_or_404(StudentFundingModel, pk=payment_id)
+    student = payment.student # Get the student associated with this payment
+
+    if request.method == 'POST':
+        # Check if the payment is already confirmed or declined
+        if payment.status != 'pending':
+            messages.warning(request, f"Payment is already {payment.status.capitalize()}. Cannot decline.")
+            # Redirect to a list of payments or the payment detail page
+            return redirect(reverse('pending_deposit_index')) # Replace with your actual URL name
+
+        # Update the payment status to 'declined'
+        payment.status = 'declined'
+        payment.save()
+
+        messages.success(request, f"Payment of ₦{payment.amount} for {student.surname} {student.last_name} has been declined.")
+        return redirect(reverse('deposit_index'))  # Replace with your actual URL name
+    else:
+        # For GET requests to this URL, you might want to display a confirmation prompt
+        # or just redirect with a message. Assuming redirect for simplicity.
+        messages.info(request, "Method Not Supported.")
+        return redirect(reverse('pending_deposit_index'))  # Replace with your actual URL name
+

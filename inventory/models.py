@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 
-from admin_site.models import SessionModel
+from admin_site.models import SessionModel, SchoolSettingModel
 from human_resource.models import StaffModel
 from student.models import StudentModel
 
@@ -220,6 +220,11 @@ class SaleModel(models.Model):
         if not self.transaction_id:
             # Generate a simple transaction ID. More robust methods might use UUIDs or sequential numbers with prefixes.
             self.transaction_id = f"SALE-{timezone.now().strftime('%Y%m%d%H%M%S')}-{self.pk or 'NEW'}"
+        if not self.session or not self.term:
+            setting = SchoolSettingModel.objects.first()
+            self.session = setting.session
+            self.term = setting.term
+
         super().save(*args, **kwargs)
         # Update related inventory quantities after sale
         # This part is usually handled in a transaction, perhaps in a service layer or view

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ school_info.name|title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body style="font-family: sans-serif; margin: 0; padding: 0;">
+
+    <header style="background-color: rgba(36, 255, 211, 0.4); border-bottom: 5px solid blue; padding: 10px; display: flex; align-items: center;">
+        <img src="{{ school_info.logo.url }}" alt="{{ school_info.name }} Logo" style="width: 30%; height: auto; margin-right: 10px;" />
+        <h3 style="width: 70%; color: white; font-family: cursive; margin: 0;">{{ school_info.name|title }}</h3>
+    </header>
+
+    <main style="padding: 20px;">
+        {% block 'main' %}{% endblock %}
+    </main>
+
+    <footer style="padding: 20px; text-align: center; border-top: 1px solid #ddd;">
+        <p style="text-align: justify; margin-bottom: 15px;">For more information, you can reach us at:</p>
+        <ul style="list-style-type: none; padding: 0; margin-bottom: 15px;">
+            <li style="margin-bottom: 5px;">
+                <a href="tel:{{ school_info.mobile }}" style="text-decoration: none; color: #333;">
+                    <i class="fa-solid fa-phone" style="margin-right: 5px;"></i> {{ school_info.mobile }}
+                </a>
+            </li>
+            <li>
+                <a href="mailto:{{ school_info.email|lower }}" style="text-decoration: none; color: #333;">
+                    <i class="fa-solid fa-message" style="margin-right: 5px;"></i> {{ school_info.email|lower }}
+                </a>
+            </li>
+        </ul>
+        <div style="text-align: center;">
+            &copy; <a href="https://{{ domain }}" style="text-decoration: none; color: #333;">{{ school_info.name|title }}</a>, All Rights Reserved.
+        </div>
+    </footer>
+
+</body>
+
+</html>

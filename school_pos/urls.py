@@ -33,6 +33,7 @@ urlpatterns = [
     path('admin/student/', include('student.urls')),
     path('admin/inventory/', include('inventory.urls')),
     path('student/', include('student_site.urls')),
+    path('parent/', include('parent_site.urls')),
     path('user/', include('user_site.urls')),
     path('admin/human_resource/', include('human_resource.urls')),
     path('django-admin/', admin.site.urls),

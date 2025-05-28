@@ -12,7 +12,7 @@
             <h4 style="margin-top:-30px" class="card-title">Balance/Debt:  <span class="text-success">{{ student.student_wallet.balance|intcomma }}</span>  /
                 <span class="text-danger">{{ student.student_wallet.debt|intcomma }}</span>
             </h4>
-                <img class="rounded-circle" style="margin-top:-100px;display:inline;float:right;width:100px;height:100px;border-radius:5px;" {% if student.image %} src="{{ student.image.url }}" {% else %} src="{% static 'admin_dashboard/images/default_image.jpg' %}" {% endif %} /></h4>
+                <img class="rounded-circle" style="margin-top:-100px;display:inline;float:right;width:100px;height:100px;border-radius:5px;" {% if student.image %} src="{{ student.image.url }}" {% else %} src="{% static 'admin_site/images/default_image.jpg' %}" {% endif %} /></h4>
 
         </div>
     </div>

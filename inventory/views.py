@@ -551,10 +551,155 @@ def place_order_view(request):
     return redirect(reverse('place_order'))
 
 
+@transaction.atomic
+@login_required
+def confirm_order_view(request, sale_id):
+    sale = get_object_or_404(SaleModel, pk=sale_id)
+    student = sale.student
+
+    if request.method == 'POST':
+        if sale.status != 'pending':
+            messages.warning(request, f"Order is already {sale.status.capitalize()}. Cannot confirm.")
+            return redirect(reverse('view_pending_orders'))
+
+        wallet, _ = StudentWalletModel.objects.get_or_create(student=student)
+        settings_obj = SchoolSettingModel.objects.first()
+
+        # Convert wallet.balance and wallet.debt to Decimal for consistent calculations
+        # This is where the conversion happens to prevent 'float' and 'Decimal' type errors.
+        current_wallet_balance = Decimal(str(wallet.balance))
+        current_wallet_debt = Decimal(str(wallet.debt))
+
+        # Ensure max_debt is also a Decimal for consistent arithmetic
+        max_debt = Decimal(str(settings_obj.max_student_debt)) if settings_obj and settings_obj.max_student_debt is not None else Decimal('0.00')
+
+        # Validate funds (re-validation at confirmation)
+        # All operands are now Decimal
+        available_funds_including_debt_limit = current_wallet_balance + (max_debt - current_wallet_debt)
+
+        if sale.total_amount > available_funds_including_debt_limit:
+            messages.error(request, 'Insufficient funds or maximum debt limit exceeded to confirm this order.')
+            return redirect(reverse('view_orders'))
+
+        try:
+            # Process each line with FIFO batch consumption
+            # Using SaleItemModel.objects.filter(sale=sale) to get related items
+            for sale_item in SaleItemModel.objects.filter(sale=sale):
+                product = sale_item.product
+                quantity_to_deduct = sale_item.quantity
+
+                # Check if product is in stock (basic check first)
+                if product.quantity < quantity_to_deduct:
+                    raise ValueError(f"Insufficient stock for {product.name}. Only {product.quantity} available.")
+
+                remaining_qty_for_item = quantity_to_deduct
+                total_cost_for_item = Decimal('0.00')
+
+                # FIFO consume StockInModel.quantity_left, update quantity_sold
+                # Order by date_added and created_at to ensure true FIFO
+                batches = StockInModel.objects.filter(
+                    product=product,
+                    quantity_left__gt=0
+                ).order_by('date_added', 'created_at')
+
+                for batch in batches:
+                    take = min(remaining_qty_for_item, batch.quantity_left)
+                    if take == 0:
+                        continue # Skip if nothing to take from this batch
+
+                    batch.quantity_left -= take
+                    batch.quantity_sold = (batch.quantity_sold or Decimal('0.00')) + take
+                    batch.status = 'finished' if batch.quantity_left <= 0 else 'active'
+                    batch.save()
+
+                    total_cost_for_item += take * batch.unit_cost_price
+                    remaining_qty_for_item -= take
+
+                    if remaining_qty_for_item <= 0:
+                        break # Fulfilled current sale item
+
+                if remaining_qty_for_item > 0:
+                    # This should ideally be caught by product.quantity check above,
+                    # but serves as a safeguard for edge cases with batch inconsistencies.
+                    raise ValueError(f"Not enough stock batches to fulfill {product.name} quantity.")
+
+                # Compute average cost and profit for the SaleItem
+                # Ensure division by zero is handled if quantity_to_deduct is 0 (though validator should prevent)
+                avg_cost_price_item = (total_cost_for_item / Decimal(str(quantity_to_deduct))).quantize(Decimal('0.01')) if quantity_to_deduct > 0 else Decimal('0.00')
+                profit_each_item = (sale_item.unit_price - avg_cost_price_item).quantize(Decimal('0.01'))
+                total_profit_item = profit_each_item * Decimal(str(quantity_to_deduct))
+
+                # Update the SaleItem with actual cost & profit
+                sale_item.cost_price = avg_cost_price_item
+                sale_item.profit = total_profit_item
+                sale_item.save()
+
+                # Update ProductModel.quantity (subtract sold quantity)
+                product.quantity -= quantity_to_deduct
+                product.save()
+
+            # Deduct from student wallet / update debt
+            # Use the converted Decimal values for calculations
+            if current_wallet_balance >= sale.total_amount:
+                wallet.balance = float(current_wallet_balance - sale.total_amount) # Convert back to float for saving if model field is FloatField
+            else:
+                remainder = sale.total_amount - current_wallet_balance
+                wallet.balance = 0.0 # Assign float zero
+                wallet.debt = float(current_wallet_debt + remainder) # Convert back to float for saving if model field is FloatField
+            wallet.save()
+
+            # Update Sale Status to 'completed'
+            sale.status = 'completed'
+            sale.save()
+
+            messages.success(request, f"Order #{sale.pk} confirmed successfully.")
+            return redirect(reverse('view_orders')) # Redirect to student's order list
+
+        except ValueError as e:
+            # Catch specific errors during stock processing
+            messages.error(request, f"Order confirmation failed: {e}")
+            return redirect(reverse('view_orders'))
+        except Exception as e:
+            # Catch any other unexpected errors
+            messages.error(request, f"An unexpected error occurred during order confirmation: {e}")
+            return redirect(reverse('view_orders'))
+    else:
+        # For GET requests, you might want to display a confirmation page
+        # or just redirect with a message indicating invalid method.
+        messages.warning(request, "Invalid request method for confirming order.")
+        return redirect(reverse('view_orders'))
+
+# --- Cancel Order View ---
+@transaction.atomic
+@login_required
+def cancel_order_view(request, sale_id):
+    sale = get_object_or_404(SaleModel, pk=sale_id)
+    if request.method == 'POST':
+        if sale.status == 'pending':
+            sale.status = 'cancelled'
+            sale.save()
+            messages.success(request, f"Order #{sale.pk} has been cancelled.")
+            return redirect(reverse('view_pending_orders'))
+        else:
+            messages.warning(request, f"Order is already {sale.status.capitalize()}. Cannot cancel.")
+            return redirect(reverse('view_pending_orders'))
+    else:
+        messages.warning(request, "Invalid request method for cancelling order.")
+        return redirect(reverse('view_pending_orders'))
+
+
 def view_orders(request):
     # (You can add filtering, pagination, etc.)
-    orders = SaleModel.objects.select_related('student').all()
+    orders = SaleModel.objects.select_related('student').exclude(status='pending')
     return render(request, 'inventory/sales/index.html', {
+        'orders': orders,
+    })
+
+
+def view_pending_orders(request):
+    # (You can add filtering, pagination, etc.)
+    orders = SaleModel.objects.select_related('student').filter(status='pending')
+    return render(request, 'inventory/sales/pending.html', {
         'orders': orders,
     })
 

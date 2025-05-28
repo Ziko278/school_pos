@@ -39,6 +39,9 @@ class SchoolSettingModel(models.Model):
         ('1st term', '1st TERM'), ('2nd term', '2nd TERM'), ('3rd term', '3rd TERM')
     )
     term = models.CharField(max_length=10, choices=TERM, null=True, blank=True)
+    account_name = models.CharField(max_length=200, null=True, blank=True)
+    account_number = models.CharField(max_length=20, null=True, blank=True)
+    bank = models.CharField(max_length=100, null=True, blank=True)
 
 
 class ClassSectionModel(models.Model):

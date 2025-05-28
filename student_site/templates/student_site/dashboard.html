@@ -1,0 +1,169 @@
+{% extends 'student_site/layout.html' %}
+{% load static %}
+{% load humanize %}
+{% block 'main' %}
+<section class="section dashboard">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ academic_info.session }}
+                                <span>| {{ academic_info.term|upper }}</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-calendar2-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{% now "F d, Y" %}</h6> {# Adjusted format for better readability #}
+                                    <span class="text small pt-1 fw-bold">Today's Date</span> <span
+                                        class="text-muted small pt-2 ps-1"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Student Detail</h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ student|title }}</h6> {# Assuming a get_full_name method or adjust to first_name last_name #}
+                                    <span class="text-grey small pt-1 fw-bold">{{ student.registration_number|upper }}</span> <span
+                                        class="text-muted small pt-2 ps-1"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card customers-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Wallet <span></span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-success text-white">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ student.student_wallet.balance|floatformat:2|intcomma }}</h6> {# Added intcomma for currency #}
+                                    <span class="text small pt-1 fw-bold">Wallet Balance</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Debt <span></span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning text-white">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ student.student_wallet.debt|floatformat:2|intcomma }}</h6> {# Added intcomma for currency #}
+                                    <span class="text small pt-1 fw-bold">Current Debt</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Products <span>| Today</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-primary text-white">
+                                    <i class="bi bi-box"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ total_products }}</h6>
+                                    <span class="text small pt-1 fw-bold">Products Bought Today</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Amount <span>| Today</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info text-white">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_amount_spent_today|floatformat:2|intcomma }}</h6> {# Changed variable name to total_amount_spent_today #}
+                                    <span class="text small pt-1 fw-bold">Amount Spent Today</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Students <span>| School</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-dark text-white">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ total_students_in_school }}</h6> {# Changed variable name to total_students_in_school #}
+                                    <span class="text small pt-1 fw-bold">Total Students in School</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Amount Spent <span>| Current Term</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-danger text-white">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_amount_spent_current_term|floatformat:2|intcomma }}</h6> {# Changed variable name to total_amount_spent_current_term #}
+                                    <span class="text small pt-1 fw-bold">Amount Spent Current Term</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Deposits <span>| All Time</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_deposits|floatformat:2|intcomma }}</h6> {# Changed variable name to total_deposits #}
+                                    <span class="text small pt-1 fw-bold">Total Deposits</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

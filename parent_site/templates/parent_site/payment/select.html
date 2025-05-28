@@ -1,0 +1,78 @@
+{% extends 'parent_site/layout.html' %}
+{% load static %}
+{% load humanize %}
+{% block 'main' %}
+
+<div class="col-lg-12 grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">Name: {{ student|title }} </h4>
+            <h4 style="margin-top:-30px" class="card-title">Reg No: {{ student.registration_number|upper }}</h4>
+            <h4 style="margin-top:-30px" class="card-title">Class: {% if student.student_class %} {{ student.student_class|upper }} {{ student.class_section|upper }} {% endif %}</h4>
+            <h4 style="margin-top:-30px" class="card-title">Balance/Debt:  <span class="text-success">{{ student.student_wallet.balance|intcomma }}</span>  /
+                <span class="text-danger">{{ student.student_wallet.debt|intcomma }}</span>
+            </h4>
+                <img class="rounded-circle" style="margin-top:-100px;display:inline;float:right;width:100px;height:100px;border-radius:5px;" {% if student.image %} src="{{ student.image.url }}" {% else %} src="{% static 'admin_site/images/default_image.jpg' %}" {% endif %} /></h4>
+
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body pt-3">
+                <ul class="nav nav-tabs nav-tabs-bordered">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Make Deposit</button>
+                    </li>
+
+                </ul>
+
+                 <div class="tab-content pt-2">
+                    <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                        <h5 class="card-title">Wallet Deposit <span style="float:right">{% now "D d M Y" %}</span> </h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" name="amount" value="" min="1" autocomplete="off" required class="form-control">
+                                        <label for="floatingName">Amount <span style="color:red"><b>*</b></span></label>
+                                        <br />
+                                    </div><br />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select name="mode" class="form-control" required>
+                                            <option value="">-----------</option>
+                                            <option value="offline">BANK PAYMENT</option>
+                                            <option value="online">ONLINE PAYMENT</option>
+                                        </select>
+                                        <label for="proofOfPayment">Preferred Method</label>
+                                        <br />
+                                    </div>
+                                    <br />
+                                </div>
+
+
+                                <div class="col-md-6">
+                                    <input type="submit" value="Proceed" class="btn btn-primary">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                 </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+{%endblock %}

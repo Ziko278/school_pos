@@ -1,0 +1,172 @@
+{% extends 'parent_site/layout.html' %}
+{% block 'main' %}
+{% load static %}
+{% load humanize %}
+
+<div class="col-12">
+    <div class="card recent-sales overflow-auto">
+
+        <div class="card-body">
+            <h5 class="card-title">Complete Payment</h5>
+            {% if form.errors %}
+            <h5 class="text-danger">{{form.errors}}</h5>
+            {% endif %}
+
+            <div class="row">
+
+                {% if method == 'online' %}
+                <div class="col-md-12">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title"></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <img src="{% static 'admin_site/images/online_payment/paystack.png' %}"
+                                         style="width:70px;height:70px;border-radius:35px;border:1px solid skyblue;">
+
+                                </div>
+                                <div class="ps-3">
+                                    <h6>Student: {{ student|title }}</h6><br/>
+                                    <h3 class="card-title">Amount: {{ amount_in_word|title }} Naira (N{{ amount|intcomma }}) </h3>
+                                    <button class="btn btn-success" id="paystack">Proceed</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-md-12">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title"></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <img src="{% static 'admin_site/images/online_payment/paystack.png' %}"
+                                         style="width:70px;height:70px;border-radius:35px;border:1px solid skyblue;">
+
+                                </div>
+                                <div class="ps-3">
+                                    <h6>Student: {{ student|title }}</h6>
+                                    <h3 class="card-title">Amount: {{ amount_in_word|title }} Naira (N{{ amount|intcomma}}) </h3>
+                                    <h6>Account Number: {{ school_setting.account_number }}</h6>
+                                    <h6>Account Name: {{ school_setting.account_name|title }}</h6>
+                                    <h6>Bank: {{ school_setting.bank|upper }}</h6>
+                                    <p class="text-danger"><b>Pay {{ amount_in_word|title }} Naira and upload your
+                                        payment proof</b></p>
+                                </div>
+
+                            </div>
+                            <form enctype="multipart/form-data" method="POST">
+                                {% csrf_token %}
+                                    <input name="mode" type="hidden" value="offline">
+                                    <input name="amount" type="hidden" value="{{amount}}">
+                                    <input name="student" type="hidden" value="{{student.id}}">
+                                    <input name="status" type="hidden" value="pending">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input class="form-control" min="1" name="proof_of_payment" required
+                                                       type="file">
+                                                <label for="floatingName">Amount <span style="color:red"><b>*</b></span></label>
+                                                <br/>
+                                            </div>
+                                            <br/>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <select class="form-control" name="method" id="paymentMethodSelect" required>
+                                                    <option value="">-----------</option>
+                                                    <option value="bank transfer">BANK TRANSFER</option>
+                                                    <option value="bank teller">BANK TELLER</option>
+                                                </select>
+                                                <label for="paymentMethodSelect">Method</label>
+                                                <br/>
+                                            </div>
+                                            <br/>
+                                        </div>
+
+                                        <div class="col-md-6" id="tellerNumberField" style="display: none;">
+                                            <div class="form-floating">
+                                                <input type="text" name="teller_number" class="form-control">
+                                                <label for="tellerNumberInput">Teller Number</label>
+                                                <br/>
+                                            </div>
+                                            <br/>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <input type="submit" class="btn btn-primary" value="Upload">
+                                            <br/>
+                                        </div>
+                                    </div>
+                                </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'admin_site/scripts/jquery.js' %}"></script>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+    $(document).ready(function(){
+        // Paystack integration script
+        $('#paystack').click(function(){
+            var handler = PaystackPop.setup({
+                key: '{{secret_key}}',
+                amount: {{amount}} * 100,
+                email: '{{student.email}}',
+                currency: 'NGN',
+
+                metadata: {
+                    'student_id': {{ student.id }},
+                    'mode': '{{ method }}',
+                    'amount': {{ amount }} * 100,
+                },
+
+                callback: function(response){
+                    var reference = response.reference;
+                    window.location = '{{ callback_url }}' + '?reference=' + reference;
+                },
+                onClose: function(response){
+                    // Redirect to the current page or a specific page on close
+                    window.location = window.location.href; // Redirects to the current page
+                },
+            });
+            handler.openIframe();
+        });
+
+        // Offline payment method logic for Teller Number field
+        var $paymentMethodSelect = $('#paymentMethodSelect');
+        var $tellerNumberField = $('#tellerNumberField');
+        var $tellerNumberInput = $tellerNumberField.find('input[name="teller_number"]'); // Get the input within the div
+
+        // Function to toggle visibility and required attribute
+        function toggleTellerNumberField() {
+            if ($paymentMethodSelect.val() === 'bank teller') {
+                $tellerNumberField.show();
+                $tellerNumberInput.prop('required', true); // Make required when visible
+            } else {
+                $tellerNumberField.hide();
+                $tellerNumberInput.prop('required', false); // Remove required when hidden
+                $tellerNumberInput.val(''); // Clear value when hidden
+            }
+        }
+
+        // Initial check on page load (in case a method is pre-selected)
+        toggleTellerNumberField();
+
+        // Listen for changes on the select dropdown
+        $paymentMethodSelect.change(function() {
+            toggleTellerNumberField();
+        });
+    });
+</script>
+
+{% endblock %}

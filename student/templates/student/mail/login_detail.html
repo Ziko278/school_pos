@@ -1,0 +1,17 @@
+{% extends "student/mail/layout.html" %}
+
+
+{% block 'main' %}
+    <p>Dear {{ student.surname }},</p>
+
+    <p>Thank you for signing up for {{ site_info.name }}!.</p>
+
+    <p>Here are you login credentials</p>
+
+    <p>username: {{username}}</p>
+    <p>password: {{password}}</p>
+    <p>url: <a href="https://{{ domain }}">https://{{ domain }}</a></p>
+
+    <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+
+{% endblock %}
