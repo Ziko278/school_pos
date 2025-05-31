@@ -8,7 +8,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.core import serializers
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
@@ -100,8 +100,9 @@ class StaffDeleteView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessag
         return context
 
 
-class GroupCreateView(SuccessMessageMixin, CreateView):
+class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     model = Group
+    permission_required = 'auth.add_group'
     form_class = GroupForm
     template_name = 'human_resource/group/list.html'
     success_message = 'Group Added Successfully'
@@ -114,8 +115,9 @@ class GroupCreateView(SuccessMessageMixin, CreateView):
         return context
 
 
-class GroupListView(ListView):
+class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Group
+    permission_required = 'auth.add_group'
     fields = '__all__'
     template_name = 'human_resource/group/index.html'
     context_object_name = "group_list"
@@ -129,8 +131,9 @@ class GroupListView(ListView):
         return context
 
 
-class GroupDetailView(DetailView):
+class GroupDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Group
+    permission_required = 'auth.add_group'
     fields = '__all__'
     template_name = 'human_resource/group/detail.html'
     context_object_name = "group"
@@ -140,8 +143,9 @@ class GroupDetailView(DetailView):
         return context
 
 
-class GroupUpdateView(SuccessMessageMixin, UpdateView):
+class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Group
+    permission_required = 'auth.add_group'
     form_class = GroupForm
     template_name = 'human_resource/group/index.html'
     success_message = 'Group Successfully Updated'
@@ -156,8 +160,9 @@ class GroupUpdateView(SuccessMessageMixin, UpdateView):
         return context
 
 
-class GroupPermissionView(SuccessMessageMixin, UpdateView):
+class GroupPermissionView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Group
+    permission_required = 'auth.add_group'
     form_class = GroupForm
     template_name = 'human_resource/group/permission.html'
     success_message = 'Group Permission Successfully Updated'
@@ -172,6 +177,8 @@ class GroupPermissionView(SuccessMessageMixin, UpdateView):
         return context
 
 
+@login_required
+@permission_required("auth.add_group", raise_exception=True)
 def group_permission_view(request, pk):
     group = Group.objects.get(pk=pk)
     if request.method == 'POST':
@@ -193,8 +200,9 @@ def group_permission_view(request, pk):
     return render(request, 'human_resource/group/permission.html', context)
 
 
-class GroupDeleteView(DeleteView):
+class GroupDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Group
+    permission_required = 'auth.add_group'
     fields = '__all__'
     template_name = 'human_resource/group/delete.html'
     context_object_name = "group"

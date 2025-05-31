@@ -2,7 +2,38 @@
 {% load static %} 
 {% load humanize %}
 
-{% block 'main' %} 
+{% block 'main' %}
+<style>
+
+    .preview {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 15px;
+      min-height: 100px;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    .preview {
+      margin-top: 1rem;
+      height: 180px;
+      background: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
 <div class="col-lg-12 grid-margin stretch-card">
     <div class="card">
         <div class="card-body">
@@ -34,7 +65,19 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings">SHOPPING HISTORY</a>
+                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings">SHOPPING DATA</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#order-history">ORDER HISTORY</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#funding-history">FUNDING HISTORY</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#student-biometric">BIO METRICS</a>
                     </li>
 
 
@@ -62,6 +105,7 @@
                                                     <p>Gender: {{student.gender|title}} </p>
                                                     <p><b>Wallet Balance: ₦{{student.student_wallet.balance|intcomma}} </b></p>
                                                     <p><b>Debt: ₦{{student.student_wallet.debt|intcomma}} </b></p>
+                                                    <p><b>Form Teacher: {% if student.form_teacher %} {{student.form_teacher.full_name|title}} ({{student.form_teacher.phone_number|title}}) {% endif %} </b></p>
                                                  </div>
                                             </div>
                                         </div>
@@ -77,111 +121,263 @@
 
 
                     <div class="tab-pane fade pt-3" id="profile-settings">
-			<h5 class="card-title">Class Attendance Record</h5>
-                        <div class="row">
-                            <div class="col-xxl-4 col-md-4">
-                                <div class="card info-card sales-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"></h5>
-                                        <div class="d-flex align-items-center">
-                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
-                                                <i class="bi bi-alarm-fill text-white"></i>
-                                            </div>
-                                            <div class="ps-3">
-                                                <h6>{% if class_attendance %} {{ class_attendance.total_attendance }} {% else %} 0 {% endif %}</h6>
-                                                <span class="text-muted small pt-2 ps-1">Total Class Attendance</span>
-                                            </div>
-                                        </div>
-                                    </div>
+			            <h5 class="card-title">Class Attendance Record</h5>
+                         <div class="row">
+        <div class="col-lg-12">
+            <div class="row">
+
+                <div class="col-md-4">
+                    <div class="card info-card customers-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Wallet <span></span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-success text-white">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ student.student_wallet.balance|floatformat:2|intcomma }}</h6> {# Added intcomma for currency #}
+                                    <span class="text small pt-1 fw-bold">Wallet Balance</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-
-                            <div class="col-xxl-4 col-md-4">
-                                <div class="card info-card sales-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"></h5>
-                                        <div class="d-flex align-items-center">
-                                            <div class="card-icon rounded-circle bg-success d-flex align-items-center justify-content-center">
-                                                <i class="bi bi-alarm-fill text-white"></i>
-                                            </div>
-                                            <div class="ps-3">
-                                                <h6>{% if class_attendance %} {{ class_attendance.present_attendance }} {% else %} 0 {% endif %}</h6>
-                                                <span class="text-muted small pt-2 ps-1">Present Attendance</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                <div class="col-md-4">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Debt <span></span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning text-white">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ student.student_wallet.debt|floatformat:2|intcomma }}</h6> {# Added intcomma for currency #}
+                                    <span class="text small pt-1 fw-bold">Current Debt</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-xxl-4 col-md-4">
-                                <div class="card info-card sales-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"></h5>
-                                        <div class="d-flex align-items-center">
-                                            <div class="card-icon rounded-circle d-flex bg-warning align-items-center justify-content-center">
-                                                <i class="bi bi-alarm-fill text-white"></i>
-                                            </div>
-                                            <div class="ps-3">
-                                                <h6>{% if class_attendance %} {{ class_attendance.late_attendance }} {% else %} 0 {% endif %}</h6>
-                                                <span class="text-muted small pt-2 ps-1">Late Class Attendance</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                <div class="col-md-4">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Products <span>| Today</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-primary text-white">
+                                    <i class="bi bi-box"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ total_products }}</h6>
+                                    <span class="text small pt-1 fw-bold">Products Bought Today</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-xxl-4 col-md-4">
-                                <div class="card info-card sales-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"></h5>
-                                        <div class="d-flex align-items-center">
-                                            <div class="card-icon rounded-circle d-flex bg-danger align-items-center justify-content-center">
-                                                <i class="bi bi-alarm-fill text-white"></i>
-                                            </div>
-                                            <div class="ps-3">
-                                                <h6>{% if class_attendance %} {{ class_attendance.absent_attendance }} {% else %} 0 {% endif %}</h6>
-                                                <span class="text-muted small pt-2 ps-1">Absent Class Attendance</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                <div class="col-md-4">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Amount <span>| Today</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info text-white">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_amount_spent_today|floatformat:2|intcomma }}</h6> {# Changed variable name to total_amount_spent_today #}
+                                    <span class="text small pt-1 fw-bold">Amount Spent Today</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-xxl-4 col-md-4">
-                                <div class="card info-card sales-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"></h5>
-                                        <div class="d-flex align-items-center">
-                                            <div class="card-icon rounded-circle d-flex bg-primary align-items-center justify-content-center">
-                                                <i class="bi bi-alarm-fill text-white"></i>
-                                            </div>
-                                            <div class="ps-3">
-                                                <h6>{% if class_attendance %} {{ class_attendance.last_attendance_date }} {% else %} {% endif %}</h6>
-                                                <span class="text-muted small pt-2 ps-1">LAst Attendance Taken</span>
-                                            </div>
-                                        </div>
-                                    </div>
+
+                <div class="col-md-4">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Amount Spent <span>| Current Term</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-danger text-white">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_amount_spent_current_term|floatformat:2|intcomma }}</h6> {# Changed variable name to total_amount_spent_current_term #}
+                                    <span class="text small pt-1 fw-bold">Amount Spent Current Term</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-xxl-4 col-md-4">
-                                <div class="card info-card sales-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"></h5>
-                                        <div class="d-flex align-items-center">
-                                            <div class="card-icon rounded-circle d-flex bg-success align-items-center justify-content-center">
-                                                <i class="bi bi-alarm-fill text-white"></i>
-                                            </div>
-                                            <div class="ps-3">
-                                                <h6>{% if class_attendance %} {{ class_attendance.last_present_date|date }} {% else %} {% endif %}</h6>
-                                                <span class="text-muted small pt-2 ps-1">Last Date Present</span>
-                                            </div>
-                                        </div>
+                <div class="col-md-4">
+                    <div class="card info-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Deposits <span>| All Time</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>₦{{ total_deposits|floatformat:2|intcomma }}</h6> {# Changed variable name to total_deposits #}
+                                    <span class="text small pt-1 fw-bold">Total Deposits</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+                    </div>
+                    <div class="tab-pane fade pt-3" id="order-history">
+			            <div class="card">
+                            <div class="card-body">
+                                <h4 class="card-title">Orders Placed by {{ student|title }}</h4>
+                                <div class="table-responsive">
+                                        <table class="table table-striped table-hover table-borderless datatable">
+                                    <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Date</th>
+                                        <th>Total Amount (₦)</th>
+                                        <th>Items</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for order in order_list %}
+                                    <tr>
+                                        <td>{{ order.transaction_id }}</td>
+                                        <td>{{ order.sale_date|date:"Y-m-d H:i" }}</td>
+                                        <td>{{ order.total_amount }}</td>
+                                        <td>{{ order.total_items }}</td>
+                                        <td scope="row" {% if order.status == 'pending' %} class='text-warning' {% elif order.status == 'cancelled' %} class='text-danger' {% else %} class='text-success' {% endif %}>{{ order.status|title }}</td>
+                                                        
+                                        <td>
+                                            <a class="btn btn-sm btn-outline-primary" href="{% url 'order_detail' order.pk %}">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td class="text-center" colspan="7">No orders found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade pt-3" id="funding-history">
+			            <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body pt-3" style="overflow-x:auto">
+                                        <h5 class="card-title">{{student|title}} Payments for {{ school_setting.session }} Session - {{ school_setting.term }}</h5>
+                                        <table class="table table-bordered datatable" style="font-size:14px">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Amount Paid</th>
+                                                    <th scope="col" style="">Date</th>
+                                                    <th scope="col" style="">Mode</th>
+                                                    <th scope="col" style="">Method</th>
+                                                    <th scope="col">Status</th>
+                                                    <th scope="col">Wallet Balance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for payment in payment_list %}
+                                                    <tr>
+                                                        <td scope="row">{{ payment.amount|intcomma }}</td>
+                                                        <td scope="row">{{ payment.created_at|date }}</td>
+                                                        <td scope="row">{{ payment.mode|title }}</td>
+                                                        <td scope="row" title="{% if payment.teller_number %} Teller Number: {{payment.teller_number}} {% endif %}">{{ payment.method|title }}</td>
+                                                        <td scope="row" {% if payment.status == 'pending' %} class='text-warning' {% elif payment.status == 'declined' %} class='text-danger' {% else %} class='text-success' {% endif %}>{{ payment.status|title }}</td>
+                                                        <td scope="row">{{ payment.balance|intcomma }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                    </div>
+                    <div class="tab-pane fade pt-3" id="student-biometric">
+
+                        <div class="container mt-5">
+  <h2>Fingerprint Capture</h2>
+  <input type="hidden" id="studentId" value="{{ student.id }}">
+
+  <label for="fingerName">Select Finger:</label>
+  <select id="fingerName" class="form-control">
+    <option value="Left Thumb">Left Thumb</option>
+    <option value="Right Thumb">Right Thumb</option>
+    <option value="Left Index">Left Index</option>
+    <option value="Right Index">Right Index</option>
+  </select>
+
+  <div class="preview" id="fingerprintPreview">Waiting for fingerprint...</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const fingerNameSelect = document.getElementById('fingerName');
+    const preview = document.getElementById('fingerprintPreview');
+    const studentId = document.getElementById('studentId').value;
+
+    async function startFingerprintScan() {
+        preview.textContent = 'Scanning... Please place your finger.';
+
+        try {
+            // Assumes vendor provides `scanFingerprint()` that returns a fingerprint template
+            const result = await scanFingerprint();  // <-- real SDK call
+
+            if (result.success) {
+                preview.textContent = 'Fingerprint captured successfully.';
+                const payload = {
+                    student_id: studentId,
+                    finger_name: fingerNameSelect.value,
+                    fingerprint_data: result.data
+                };
+
+                const response = await fetch('/api/capture-fingerprint/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const resJson = await response.json();
+                if (resJson.success) {
+                    preview.textContent = 'Saved to server successfully.';
+                } else {
+                    preview.textContent = 'Server error: ' + resJson.message;
+                }
+            } else {
+                preview.textContent = 'Failed to capture fingerprint.';
+            }
+        } catch (error) {
+            preview.textContent = 'Error: ' + error.message;
+        }
+    }
+
+    fingerNameSelect.addEventListener('change', () => {
+        startFingerprintScan();
+    });
+});
+</script>
+
                     </div>
 
                 </div>
@@ -297,16 +493,9 @@
 </div>
 
 
-<style>
-    label {
-        width: 90px
-    }
-    .info {
-        margin-left:10px
-    }
-</style>
 
-<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
+
+<script src="{% static 'admin_site/scripts/jquery.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

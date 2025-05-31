@@ -1,7 +1,10 @@
 import random
+
+from django.apps import apps
 from django.contrib.auth.models import User
 from django.db import models, transaction
 from admin_site.models import ClassesModel, ClassSectionModel, SchoolSettingModel, SessionModel
+from human_resource.models import StaffModel
 from user_site.models import UserProfileModel
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -46,6 +49,9 @@ class StudentModel(models.Model):
     class_section = models.ForeignKey(ClassSectionModel, null=True, on_delete=models.CASCADE)
     barcode = models.FileField(upload_to='barcode/student', null=True, blank=True)
     status = models.CharField(max_length=15, blank=True, default='active')
+    created_by = models.ForeignKey(StaffModel, on_delete=models.SET_NULL, null=True, blank=True,
+                                   help_text="Staff member who recorded this stock out.")  # Who removed it
+
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -103,6 +109,16 @@ class StudentModel(models.Model):
 
         super().save(*args, **kwargs)
 
+    def form_teacher(self):
+        ClassSectionInfoModel = apps.get_model('admin_site', 'ClassSectionInfoModel')
+        class_info = ClassSectionInfoModel.objects.filter(student_class=self.student_class, section=self.class_section).first()
+        if class_info and class_info.form_teacher:
+            return {
+                'full_name': class_info.form_teacher.full_name,
+                'phone_number': class_info.form_teacher.phone_number,
+            }
+        return None
+
 
 class StudentWalletModel(models.Model):
     student = models.OneToOneField(StudentModel, on_delete=models.CASCADE, blank=True, related_name='student_wallet')
@@ -126,6 +142,9 @@ class StudentFundingModel(models.Model):
     mode = models.CharField(max_length=100, choices=MODE, blank=True, default='offline')
     status = models.CharField(max_length=30, blank=True, default='confirmed')  # pending, failed and completed
     created_at = models.DateTimeField(auto_now_add=True, blank=True)
+    created_by = models.ForeignKey(StaffModel, on_delete=models.SET_NULL, null=True, blank=True,
+                                   help_text="Staff member who recorded this stock out.")  # Who removed it
+
     session = models.ForeignKey(SessionModel, on_delete=models.SET_NULL, null=True, blank=True)
     TERM = (
         ('1st term', '1st TERM'), ('2nd term', '2nd TERM'), ('3rd term', '3rd TERM')
@@ -147,3 +166,14 @@ class StudentFundingModel(models.Model):
             self.balance = StudentWalletModel.objects.get(student=self.student).balance
 
         super(StudentFundingModel, self).save(*args, **kwargs)
+
+
+class FingerprintModel(models.Model):
+    student = models.ForeignKey(StudentModel, on_delete=models.CASCADE, related_name='fingerprints')
+    finger_name = models.CharField(max_length=50)  # e.g. "Left Thumb"
+    fingerprint_data = models.TextField()  # Could be Base64 or Hex string
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student.__str__()} - {self.finger_name}"
+

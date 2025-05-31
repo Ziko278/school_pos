@@ -1,227 +1,162 @@
-{% extends 'admin_dashboard/layout.html' %}
+{% extends 'admin_site/layout.html' %}
 {% load static %}
 {% load humanize %}
-{% load fee_custom_filters %}
 {% block 'main' %}
-{% if form.errors %}
-<style>
-	td, th{
-		border:1px solid black;
-		padding-left:5px;
-		text-align:center;
-		font-family:courier
-	}
-	.student-summary span{
-		margin-right:20px
-	}
-	.student-info span {
-		margin-right:30px
-	}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Student Funding Details</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Student: <a href="{% url 'student_detail' pk=funding.student.pk %}">{{ funding.student }}</a></h5>
+                    <hr>
+                    <dl class="row">
+                        <dt class="col-sm-4">Amount Paid:</dt>
+                        <dd class="col-sm-8">₦{{ funding.amount|floatformat:2 }}</dd>
 
-	.student-info {
-		font-size: 14px;
-		font-family: sans serif
-	}
-	{% for subject in subject_list %}
-		#bar{{forloop.counter}} {
-			{% for key, value in result.result.items %}
-				{% if subject.id|stringformat:"i" == key %}
-					 height:{{ value.total|floatformat }}%;
-					 border: 1px solid red;
+                        <dt class="col-sm-4">Balance:</dt>
+                        <dd class="col-sm-8">₦{{ funding.balance|floatformat:2 }}</dd>
 
-				{% endif %}
-			{% endfor %}
-		}
-	{% endfor %}
-	th {
-		height: 20px;
-		font-size: 12px;
-		padding:0px
-	}
+                        <dt class="col-sm-4">Payment Method:</dt>
+                        <dd class="col-sm-8">{{ funding.get_method_display }}</dd>
 
+                        <dt class="col-sm-4">Payment Mode:</dt>
+                        <dd class="col-sm-8">{{ funding.get_mode_display }}</dd>
 
+                        <dt class="col-sm-4">Date Created:</dt>
+                        <dd class="col-sm-8">{{ funding.created_at|date:"M d, Y P" }}</dd>
 
-</style>
-        <h5 class="text-danger">{{form.errors}}</h5>
-        {% endif %}
-<div class="col-lg-12 grid-margin stretch-card  non-printable">
-    <div class="card">
-        <div class="card-body">
-            <h4 class="card-title">Name: {{ fee_payment.student|title }} <br />
-                Reg No: {{ fee_payment.student.registration_number|upper }} <br />
-                Class: {% if fee_payment.student.student_class %} {{ fee_payment.student.student_class|upper }} {{ fee_payment.student.class_section|upper }} {% endif %} <br><br>
-                {% if fee_payment.payment_proof %} <a href="{{fee_payment.payment_proof.url}}" class="btn btn-primary btn-sm" target="_blank">View Payment Proof</a> {% else %} No Payment Proof Uploaded {% endif %}
-                <img class="rounded-circle" style="margin-top:-70px;display:inline;float:right;width:100px;height:100px;border-radius:5px;" {% if fee_payment.student.image %} src="{{ fee_payment.student.image.url }}" {% else %} src="{% static 'admin_dashboard/images/default_image.jpg' %}" {% endif %} /></h4>
-
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-body pt-3">
-                <ul class="nav nav-tabs nav-tabs-bordered  non-printable">
-                    <li class="nav-item">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Payment Detail</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#current-payment">Payments Receipt</button>
-                    </li>
-
-                </ul>
-
-                <div class="tab-content pt-2">
-                    <div class="tab-pane fade show active profile-overview" id="profile-overview">
-                        <h5 class="card-title">Fee Payment Detail for {{fee_payment.student|title}}, {% if fee_payment.student.student_class %} {{ fee_payment.student.student_class }} {{ fee_payment.student.class_section }} - {% endif %} {{ fee_payment.term|title }} {{ fee_payment.session }} Session </h5>
-                        <table class="table table-hover">
-                            <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Fee</th>
-                                <th scope="col">Amount Paid</th>
-                                <th scope="col">Total Paid</th>
-                                <th scope="col">Balance</th>
-
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% if fee_payment.fees.all %}
-                            {% for payment in fee_payment.fees.all %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ payment.fee.fee|title }}</td>
-                                <td>{{ payment.amount }}</td>
-                                <td>{{ payment.fee|get_amount_paid:fee_payment.student.id }}</td>
-                                <td>{{ payment.fee|get_fee_balance:fee_payment.student.id }}</td>
-                            </tr>
-                            {% endfor %}
+                        <dt class="col-sm-4">Recorded By:</dt>
+                        <dd class="col-sm-8">
+                            {% if funding.created_by %}
+                                <a href="{% url 'staff_detail' pk=funding.created_by.pk %}">{{ funding.created_by|title }}</a>
+                            {% else %}
+                                N/A
                             {% endif %}
-                            </tbody>
-                        </table>
-                        <h4 class="card-title">Amount: {{ amount_in_word|title }} Naira Only ({{fee_payment.amount|intcomma}})</h4>
+                        </dd>
+
+                        <dt class="col-sm-4">Session:</dt>
+                        <dd class="col-sm-8">{{ funding.session }}</dd>
+
+                        <dt class="col-sm-4">Term:</dt>
+                        <dd class="col-sm-8">{{ funding.get_term_display }}</dd>
+
+                        {% if funding.teller_number %}
+                        <dt class="col-sm-4">Teller Number:</dt>
+                        <dd class="col-sm-8">{{ funding.teller_number }}</dd>
+                        {% endif %}
+
+                        {% if funding.reference %}
+                        <dt class="col-sm-4">Reference:</dt>
+                        <dd class="col-sm-8">{{ funding.reference }}</dd>
+                        {% endif %}
+
+                        {% if funding.decline_reason %}
+                        <dt class="col-sm-4">Decline Reason:</dt>
+                        <dd class="col-sm-8 text-danger">{{ funding.decline_reason }}</dd>
+                        {% endif %}
+
+                        {% if funding.proof_of_payment %}
+                        <dt class="col-sm-4">Proof of Payment:</dt>
+                        <dd class="col-sm-8"><a href="{{ funding.proof_of_payment.url }}" target="_blank">View Proof</a></dd>
+                        {% endif %}
+                    </dl>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'deposit_index' %}" class="btn btn-secondary">Back to List</a>
+                        <button class="btn btn-info" onclick="printReceipt()">Print Receipt</button>
                     </div>
-
-                    <div class="tab-pane fade profile-edit pt-3" id="current-payment">
-
-                        <div id="download-detailed-receipt">
-                             <p>
-                                {% if fee_payment.status != "pending" or 1 %}
-                                <button type="button" title="Print Receipt" id="download-summary-receipt-button" data-bs-toggle="modal" data-bs-target="#bulk-payment" class="btn btn-primary"><i class="bi bi-printer"></i> </button>
-                                {% endif %}
-                            </p>
-                            <div style="background-color:white;border:2px solid skyblue;">
-                                <div class="" style="color:black;font-family:cursive;background-color:white;border-bottom:2px solid black;height:135px">
-                                    <div class="row">
-
-                                        <div class="col-9" style="padding:15px">
-                                            <h4 class="text-center" style="color:grey;font-family:serif"><b>{{ general_setting.name|upper }}</b></h4>
-                                            <h6 class="text-center" style="color:grey;font-size:14px;margin-top:10px"><b>...{{ general_setting.motto|title }}</b></h6>
-                                            <h6 class="text-center" style="color:grey">{{ general_setting.address|upper }}</h6>
-                                            <p class="text-center" style="color:grey;margin-bottom:10px;font-size:13px">{{ general_setting.mobile_1 }} | 
-						{{ general_setting.website|lower }} | {{ general_setting.email|lower }} </p>
-                                        </div>
-
-                                        <div class="col-3">
-                                             <image src="{{ general_setting.logo.url }}" style="width:100%;height:133px;border-radius:0px;" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-success" style="color:white;height:30px;border-bottom:1px solid black;border-top:0px solid black;">
-                                    <p class="text-center" style="font-weight:bold;font-family:cursive">Fee Payment Receipt </p>
-                                </div>
-
-                                <div style="padding:10px;font-family:cursive">
-                                    <div class="row">
-                                        <div class="col-6">
-                                            No: {{ fee_payment.reference|upper }}
-                                        </div>
-                                        <div class="col-6">
-                                            Date: {{ fee_payment.date|date }}
-                                        </div>
-                                        <div class="col-12">
-                                            Name: {{ fee_payment.student|title }}
-                                        </div>
-
-                                        <div class="col-6">
-                                            Session: {{ fee_payment.session}}
-                                        </div>
-                                        <div class="col-6">
-                                            Term: {{ fee_payment.term|upper }}
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                <div>
-                                    <table class="table">
-                                    <thead>
-                                      <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Fee</th>
-                                        <th scope="col">Amount</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for payment in fee_payment.fees.all %}
-                                      <tr>
-                                            <th scope="row">{{ forloop.counter }}</th>
-                                            <td>{{ payment.fee.fee|title }}</td>
-                                            <td>₦{{ payment.amount|intcomma }}</td>
-                                      </tr>
-
-                                    {% endfor %}
-                                     <tr>
-                                        <td colspan="3" style="color:white;background:white">hi</td>
-                                      </tr>
-                                    <tr>
-                                        <th></th>
-                                        <th>Total</th>
-                                        <th>₦{{ fee_payment.amount|intcomma }}</th>
-                                    </tr>
-                                    </tbody>
-                                  </table>
-                                    <h4 class="card-title" style="padding:10px">{{ amount_in_word|title }} Naira Only</h4>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<script>
+    function printReceipt() {
+        const funding = {
+            studentName: "{{ funding.student.get_full_name|escapejs }}",
+            amount: "{{ funding.amount|floatformat:2|escapejs }}",
+            balance: "{{ funding.balance|floatformat:2|escapejs }}",
+            method: "{{ funding.get_method_display|escapejs }}",
+            mode: "{{ funding.get_mode_display|escapejs }}",
+            createdAt: "{{ funding.created_at|date:'M d, Y P'|escapejs }}",
+            recordedBy: "{% if funding.created_by %}{{ funding.created_by.get_full_name|escapejs }}{% else %}N/A{% endif %}",
+            session: "{{ funding.session|escapejs }}",
+            term: "{{ funding.get_term_display|escapejs }}",
+            tellerNumber: "{% if funding.teller_number %}{{ funding.teller_number|escapejs }}{% else %}N/A{% endif %}",
+            reference: "{% if funding.reference %}{{ funding.reference|escapejs }}{% else %}N/A{% endif %}",
+            schoolName: "{% if school_setting %}{{ school_setting.school_name|escapejs }}{% else %}Your School Name{% endif %}",
+            schoolAddress: "{% if school_setting %}{{ school_setting.school_address|escapejs }}{% else %}Your School Address{% endif %}",
+            schoolPhone: "{% if school_setting %}{{ school_setting.school_phone|escapejs }}{% else %}Your School Phone{% endif %}",
+            schoolEmail: "{% if school_setting %}{{ school_setting.school_email|escapejs }}{% else %}Your School Email{% endif %}",
+            schoolWebsite: "{% if school_setting %}{{ school_setting.school_website|escapejs }}{% else %}Your School Website{% endif %}",
+        };
 
-<script src="{% static 'admin_dashboard/scripts/jquery.js' %}"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        const receiptContent = `
+            <html>
+            <head>
+                <title>Payment Receipt - ${funding.studentName}</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; margin: 20px; color: #333; }
+                    .receipt-container { width: 300px; margin: 0 auto; border: 1px solid #ccc; padding: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+                    .header { text-align: center; margin-bottom: 15px; }
+                    .header h2 { margin: 0; color: #007bff; }
+                    .header p { margin: 2px 0; font-size: 0.8em; }
+                    .details p { margin: 5px 0; font-size: 0.9em; }
+                    .details strong { display: inline-block; width: 100px; }
+                    .amount-section { text-align: center; margin: 20px 0; padding: 10px; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; }
+                    .amount-section h3 { margin: 0; color: #28a745; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 0.75em; color: #666; }
+                    @media print {
+                        body { margin: 0; }
+                        .receipt-container { border: none; box-shadow: none; width: 100%; padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-container">
+                    <div class="header">
+                        <h2>${funding.schoolName}</h2>
+                        <p>${funding.schoolAddress}</p>
+                        <p>Phone: ${funding.schoolPhone} | Email: ${funding.schoolEmail}</p>
+                        <p>${funding.schoolWebsite}</p>
+                        <hr>
+                        <h3>OFFICIAL RECEIPT</h3>
+                    </div>
+                    <div class="details">
+                        <p><strong>Student:</strong> ${funding.student}</p>
+                        <p><strong>Date:</strong> ${funding.createdAt}</p>
+                        <p><strong>Session:</strong> ${funding.session}</p>
+                        <p><strong>Term:</strong> ${funding.term}</p>
+                        <p><strong>Method:</strong> ${funding.method}</p>
+                        <p><strong>Mode:</strong> ${funding.mode}</p>
+                        ${funding.tellerNumber !== 'N/A' ? `<p><strong>Teller No:</strong> ${funding.tellerNumber}</p>` : ''}
+                        ${funding.reference !== 'N/A' ? `<p><strong>Reference:</strong> ${funding.reference}</p>` : ''}
+                        <p><strong>Recorded By:</strong> ${funding.recordedBy}</p>
+                    </div>
+                    <div class="amount-section">
+                        <p style="margin-bottom: 5px;">Amount Paid:</p>
+                        <h3>₦${funding.amount}</h3>
+                        <p style="margin-top: 5px;">Balance: ₦${funding.balance}</p>
+                    </div>
+                    <div class="footer">
+                        <p>Thank you for your payment!</p>
+                        <p>This is a computer generated receipt, no signature is required.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
 
-
-<script type="text/javascript">
-	$(document).on('click','#download-detail-receipt-button', function(){
-		pdfjs = $('#download-detailed-receipt')
-	    var elementToPrint = $('#download-detailed-receipt').clone();
-            var printWindow = window.open("", "_blank");
-		printWindow.document.write('<html><head><title>Printed Content</title>');
-            printWindow.document.write('<style>' + getComputedStyle(document.body).cssText + '</style>'); // Include styles from the current page
-            printWindow.document.write('</head><body>');
-            printWindow.document.write(elementToPrint[0].outerHTML);
-            printWindow.document.write('</body></html>');
-		printWindow.document.close();
-            printWindow.print();
-    })
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(receiptContent);
+        printWindow.document.close(); // Close the document to ensure content is loaded
+        printWindow.focus(); // Focus the new window
+        printWindow.print(); // Trigger the print dialog
+        // printWindow.close(); // Optional: Close the window after printing (might be too fast for some browsers)
+    }
 </script>
-
-<script type="text/javascript">
-	$(document).on('click','#download-summary-receipt-button', function(){
-		//let pdfjs = document.querySelector('#download-summary-receipt')
-		window.print();
-
-    })
-</script>
-{%endblock %}
+{% endblock %}

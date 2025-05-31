@@ -147,4 +147,25 @@ class SaleItemForm(forms.ModelForm):
             'product': forms.Select(attrs={'class': 'form-control product-select'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
             'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01'}),
+
         }
+
+
+class StockOutForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            if field != 'products':
+                self.fields[field].widget.attrs.update({
+                    'class': 'form-control',
+                    'autocomplete': 'off'
+                })
+
+    class Meta:
+        model = StockOutModel
+        fields = '__all__'
+        widgets = {
+
+        }
+
+

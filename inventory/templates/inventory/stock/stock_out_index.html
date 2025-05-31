@@ -1,0 +1,42 @@
+{% extends 'admin_site/layout.html' %}
+{% load humanize %}
+{% block 'main' %}
+<div class="card">
+    <div class="card-body">
+        <h4 class="card-title">Inventory Stocks Outs</h4>
+        <div class="table-responsive">
+                <table class="table table-striped table-hover table-borderless datatable">
+            <thead>
+            <tr>
+                <th>Products</th>
+                <th>Quantity</th>
+                <th>Worth (₦)</th>
+                <th>Date</th>
+                <th>Reason</th>
+                <th>Staff</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for stock_out in stock_out_list %}
+            <tr>
+                <td>{{ stock_out.stock.product|title }}</td>
+                <td>{{ stock_out.quantity_removed|floatformat:1 }}</td>
+                <td>{{ stock_out.cost_of_removed_stock|floatformat:2|intcomma }}</td>
+                <td>{{ stock_out.date_removed|date:"Y-m-d" }}</td>
+                <td>{{ stock_out.reason }}</td>
+
+                <td >{% if stock_out.created_by %} <a href="{% url 'staff_detail' stock_out.created_by.id %}">{{ stock_out.created_by|title }}</a>{% endif %}
+                </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+                <td class="text-center" colspan="7">No Stock Out found.</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

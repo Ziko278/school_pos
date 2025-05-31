@@ -36,10 +36,15 @@
                     {% for supplier in supplier_list %}
                         <tr>
                             <td> {{ supplier|title }}  </td>
-                            <td> {{ supplier.category|title }}  </td>
-                            <td> {{ supplier.price|intcomma }}  </td>
-                            <td> {{ supplier.quantity }}  </td>
-                            <td> {{ supplier.reorder_level }}  </td>
+                            <td> {{ supplier.contact_person|title }}  </td>
+                            <td> {{ supplier.phone_number }}  </td>
+                            <td> {{ supplier.email }}  </td>
+                            <td> <ul>
+                                {% for product in supplier.products.all %}
+                                <li>{{ product.name|title }} ({{product.quantity}})</li>
+                                {% endfor %}
+                            </ul>
+                            </td>
 
                             <td>
                                 <a title="Edit Supplier Details" class="btn btn-warning" href="{% url 'supplier_edit' supplier.id %}"><i class="bi bi-pencil"></i></a>

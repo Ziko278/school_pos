@@ -124,3 +124,21 @@ class ClassSectionInfoModel(models.Model):
     def number_of_students(self):
         StudentModel = apps.get_model('student', 'StudentModel')
         return StudentModel.objects.filter(student_class=self.student_class, class_section=self.section).count()
+
+
+class ActivityLogModel(models.Model):
+    log = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True, blank=True)
+    session = models.ForeignKey(SessionModel, on_delete=models.SET_NULL, null=True, blank=True)
+    TERM = (
+        ('1st term', '1st TERM'), ('2nd term', '2nd TERM'), ('3rd term', '3rd TERM')
+    )
+    term = models.CharField(max_length=10, choices=TERM, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.session or not self.term:
+            setting = SchoolSettingModel.objects.first()
+            self.session = setting.session
+            self.term = setting.term
+
+        super(ActivityLogModel, self).save(*args, **kwargs)

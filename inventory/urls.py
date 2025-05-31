@@ -15,6 +15,9 @@ urlpatterns = [
     path('product/<int:pk>/edit', ProductUpdateView.as_view(), name='product_edit'),
     path('product/<int:pk>/delete', ProductDeleteView.as_view(), name='product_delete'),
     path('product/stock-in', product_stock_in_view, name='product_stock_in'),
+    path('product/stock-out', StockOutCreateView.as_view(), name='product_stock_out'),
+    path('product/stock-in/index', StockInListView.as_view(), name='product_stock_in_index'),
+    path('product/stock-out/index', StockOutIndexView.as_view(), name='product_stock_out_index'),
     path('product/stock-in/<int:pk>/detail', product_stock_in_detail_view, name='product_stock_in_detail'),
     path('api/product-lookup-by-barcode/', api_product_lookup_by_barcode, name='api_product_lookup_by_barcode'),
     path('place-order/', place_order_view, name='place_order'),
@@ -22,6 +25,7 @@ urlpatterns = [
     path('orders/pending', view_pending_orders, name='view_pending_orders'),
     path('order/<int:sale_id>/confirm/', confirm_order_view, name='confirm_order'),
     path('order/<int:sale_id>/cancel/', cancel_order_view, name='cancel_order'),
+
 
     path('orders/<int:pk>/', order_detail, name='order_detail'),
 

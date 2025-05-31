@@ -30,7 +30,7 @@
                                 <td scope="row">{{ payment.created_at|date }}</td>
                                 <td scope="row">{{ payment.mode|title }}</td>
                                 <td scope="row" title="{% if payment.teller_number %} Teller Number: {{payment.teller_number}} {% endif %}">{{ payment.method|title }}</td>
-                                <td scope="row" {% if payment.status == 'pending' %} class='text-warning' {% else %} class='text-success' {% endif %}>{{ payment.status|title }}</td>
+                                 <td scope="row" {% if payment.status == 'pending' %} class='text-warning' {% elif payment.status == 'declined' %} class='text-danger' {% else %} class='text-success' {% endif %}>{{ payment.status|title }}</td>
                                 <td scope="row">{{ payment.balance|intcomma }}</td>
                             </tr>
                         {% endfor %}

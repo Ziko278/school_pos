@@ -1,7 +1,12 @@
+import base64
 import io
+from datetime import date
 
+from django.utils import timezone
+from pytz import timezone as pytz_timezone
 from django.contrib.messages.views import messages
-from django.http import HttpResponse
+from django.db.models import Sum
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 import json
@@ -10,15 +15,21 @@ from django.urls import resolve
 from django.core import serializers
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from xlsxwriter import Workbook
 from django.apps import apps
+
+from admin_site.models import ActivityLogModel
+from inventory.models import SaleModel, SaleItemModel
 from student.models import *
 from student.forms import *
+from student.signals import get_day_ordinal_suffix
 
 
 class StudentCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
@@ -51,6 +62,8 @@ class StudentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return StudentModel.objects.filter().exclude(status='graduated').order_by('surname')
 
 
+@login_required
+@permission_required("student.view_studentmodel", raise_exception=True)
 def class_student_list_view(request):
     if 'student_class' in request.GET and 'class_section' in request.GET:
         student_class = request.GET.get('student_class')
@@ -80,9 +93,54 @@ class StudentDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        school_setting = SchoolSettingModel.objects.first()
+        today = date.today()
+        student = self.object
+        context['student'] = student
+        context['school_setting'] = school_setting
+        context['payment_list'] = StudentFundingModel.objects.filter(student=student, term=school_setting.term,
+                                                          session=school_setting.session).order_by('-created_at')
+        context['order_list'] = SaleModel.objects.filter(student=student, term=school_setting.term, session=school_setting.session)
+        total_products = SaleItemModel.objects.filter(
+            sale__student=student,
+            sale__sale_date=today,
+            sale__status='completed'
+        ).aggregate(total_items=Sum('quantity'))['total_items'] or 0
+        context['total_products'] = total_products
 
-        context['student'] = self.object
+        # --- 3. Amount Spent Today (by the student) ---
+        # Now using SaleModel for total_amount in completed sales
+        total_amount_spent_today = SaleModel.objects.filter(
+            student=student,
+            sale_date=today,
+            status='completed'
+        ).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0.00
+        context['total_amount_spent_today'] = total_amount_spent_today
 
+        # --- 4. Total Students in School ---
+        # This replaces the 'Staff' card as it's more relevant for a parent dashboard
+        total_students_in_school = StudentModel.objects.count()
+        context['total_students_in_school'] = total_students_in_school
+
+        # --- 5. Amount Spent Current Term (by the student) ---
+        # Now using SaleModel for total_amount in completed sales for the current term
+        total_amount_spent_current_term = 0.00
+        if school_setting and school_setting.term:
+            total_amount_spent_current_term = SaleModel.objects.filter(
+                student=student,
+                term=school_setting.term,
+                session=school_setting.session,
+                status='completed'
+            ).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0.00
+        context['total_amount_spent_current_term'] = total_amount_spent_current_term
+
+        # --- 6. Total Deposits (by the student, only confirmed ones) ---
+        # Using StudentFundingModel for total_amount of confirmed deposits
+        total_deposits = StudentFundingModel.objects.filter(
+            student=student,
+            status='confirmed'  # Only sum confirmed deposits
+        ).aggregate(total_amount=Sum('amount'))['total_amount'] or 0.00
+        context['total_deposits'] = total_deposits
         return context
 
 
@@ -111,7 +169,7 @@ class StudentUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMess
 
 class StudentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, DeleteView):
     model = StudentModel
-    permission_required = 'student.delete_studentsmodel'
+    permission_required = 'student.delete_studentmodel'
     fields = '__all__'
     template_name = 'student/student/delete.html'
     context_object_name = "student"
@@ -122,6 +180,7 @@ class StudentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMess
 
 
 @login_required
+@permission_required("student.view_studentmodel", raise_exception=True)
 def student_login_detail_view(request):
     if request.method == 'GET':
         student_class = request.GET.get('student_class')
@@ -187,8 +246,9 @@ def student_login_detail_view(request):
         return response
 
 
-class DepositPaymentSelectStudentView(LoginRequiredMixin, SuccessMessageMixin, TemplateView):
+class DepositPaymentSelectStudentView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, TemplateView):
     template_name = 'student/fee_payment/select_student.html'
+    permission_required = 'student.add_studentfundingmodel'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -198,6 +258,7 @@ class DepositPaymentSelectStudentView(LoginRequiredMixin, SuccessMessageMixin, T
         return context
 
 
+@login_required
 def deposit_get_class_students(request):
     class_pk = request.GET.get('class_pk')
     section_pk = request.GET.get('section_pk')
@@ -214,6 +275,7 @@ def deposit_get_class_students(request):
     return HttpResponse(result)
 
 
+@login_required
 def deposit_get_class_students_by_reg_number(request):
     reg_no = request.GET.get('reg_no')
 
@@ -229,6 +291,8 @@ def deposit_get_class_students_by_reg_number(request):
     return HttpResponse(result)
 
 
+@login_required
+@permission_required("student.view_studentfundingmodel", raise_exception=True)
 def deposit_payment_list_view(request):
     session_id = request.GET.get('session', None)
     school_setting = SchoolSettingModel.objects.first()
@@ -250,6 +314,8 @@ def deposit_payment_list_view(request):
     return render(request, 'student/fee_payment/index.html', context)
 
 
+@login_required
+@permission_required("student.view_studentfundingmodel", raise_exception=True)
 def pending_deposit_payment_list_view(request):
     session_id = request.GET.get('session', None)
     session = SessionModel.objects.get(id=session_id)
@@ -265,6 +331,8 @@ def pending_deposit_payment_list_view(request):
     return render(request, 'student/fee_payment/pending.html', context)
 
 
+@login_required
+@permission_required("student.add_studentfundingmodel", raise_exception=True)
 def deposit_create_view(request, student_pk):
     student = StudentModel.objects.get(pk=student_pk)
     setting = SchoolSettingModel.objects.first()
@@ -275,6 +343,11 @@ def deposit_create_view(request, student_pk):
             deposit = form.save(commit=False)  # Don't save yet, we need to set the student
             deposit.student = student  # Associate the funding with the student
 
+            try:
+                profile = UserProfileModel.objects.get(user=request.user)
+                deposit.created_by = profile.staff
+            except Exception:
+                pass
             # Set session and term based on school setting if not provided by form
             if not deposit.session:
                 deposit.session = setting.session
@@ -302,6 +375,28 @@ def deposit_create_view(request, student_pk):
             deposit.balance = student_wallet.balance - student_wallet.debt
             deposit.save()  # Now save the deposit
 
+            target_timezone = pytz_timezone('Africa/Lagos')
+
+            localized_created_at = timezone.localtime(deposit.created_at, timezone=target_timezone)
+
+            formatted_time = localized_created_at.strftime(
+                f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+            )
+
+            log = f"""
+                       <div class='text-white bg-success' style='padding:5px;'>
+                       <p class=''>Student Wallet Funding: <a href={reverse('deposit_detail', kwargs={'pk': deposit.id})}><b>₦{amount}</b></a> deposit to wallet of
+                       <a href={reverse('student_detail', kwargs={'pk': deposit.student.id})}><b>{deposit.student.__str__().title()}</b></a>
+                        by <a href={reverse('staff_detail', kwargs={'pk': deposit.created_by.id})}><b>{deposit.created_by.__str__().title()}</b></a>
+                       <br><span style='float:right'>{formatted_time}</span>
+                       </p>
+
+                       </div>
+                       """
+
+            activity = ActivityLogModel.objects.create(log=log)
+            activity.save()
+
             return redirect('deposit_create',
                             student_pk=student_pk)  # Redirect to prevent form resubmission on refresh
         else:
@@ -322,6 +417,18 @@ def deposit_create_view(request, student_pk):
     return render(request, 'student/fee_payment/create.html', context)
 
 
+@login_required
+def deposit_detail_view(request, pk):
+    deposit = get_object_or_404(StudentFundingModel, pk=pk)
+
+    # Compute total profit here
+    return render(request, 'student/fee_payment/detail.html', {
+        'funding': deposit,
+    })
+
+
+@login_required
+@permission_required("student.change_studentfundingmodel", raise_exception=True)
 @transaction.atomic
 def confirm_payment_view(request, payment_id):
     payment = get_object_or_404(StudentFundingModel, pk=payment_id)
@@ -369,6 +476,8 @@ def confirm_payment_view(request, payment_id):
 
 
 # --- Decline Payment View ---
+@login_required
+@permission_required("student.change_studentfundingmodel", raise_exception=True)
 @transaction.atomic
 def decline_payment_view(request, payment_id):
     payment = get_object_or_404(StudentFundingModel, pk=payment_id)
@@ -393,3 +502,81 @@ def decline_payment_view(request, payment_id):
         messages.info(request, "Method Not Supported.")
         return redirect(reverse('pending_deposit_index'))  # Replace with your actual URL name
 
+
+@csrf_exempt
+def capture_fingerprint(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            student_id = data.get('student_id')
+            finger_name = data.get('finger_name')
+            fingerprint_data = data.get('fingerprint_data')
+
+            student = StudentModel.objects.get(id=student_id)
+
+            FingerprintModel.objects.create(
+                student=student,
+                finger_name=finger_name,
+                fingerprint_data=fingerprint_data
+            )
+
+            return JsonResponse({'success': True, 'message': 'Fingerprint saved successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+    return JsonResponse({'success': False, 'message': 'Invalid method'}, status=405)
+
+
+def match_fingerprint(input_template_b64: str, stored_template_bytes: bytes) -> bool:
+    """
+    Decode the incoming base64 template and compare it to stored bytes.
+    Replace the pseudocode with your scanner SDK’s match() function.
+    """
+    try:
+        probe = base64.b64decode(input_template_b64)
+    except Exception:
+        return False
+
+    # --- PSEUDOCODE: swap this for your real SDK call! ---
+    # e.g. result = your_sdk.verify(probe, stored_template_bytes)
+    # return result.is_match
+    #
+    # For now we’ll just compare raw bytes (never true in real life)
+    return probe == stored_template_bytes
+# -----------------------------------------------------------------------------
+
+@csrf_exempt
+@require_POST
+def identify_student_by_fingerprint(request):
+    """
+    Expects JSON: { "fingerprint_data": "<base64 template>" }
+    Returns JSON with student info on match.
+    """
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
+
+    template_b64 = payload.get('fingerprint_data')
+    if not template_b64:
+        return JsonResponse({'success': False, 'message': 'No fingerprint data provided'}, status=400)
+
+    # Iterate all stored fingerprints
+    for fp in FingerprintModel.objects.select_related('student').all():
+        if match_fingerprint(template_b64, fp.fingerprint_data):
+            stu = fp.student
+            # Build student payload
+            return JsonResponse({
+                'success': True,
+                'student': {
+                    'id':             stu.id,
+                    'name':           getattr(stu, 'full_name', str(stu)),
+                    'reg_number':     getattr(stu, 'registration_number', ''),
+                    'student_class':  getattr(stu, 'student_class', ''),
+                    'wallet_balance': float(getattr(stu.student_wallet, 'balance', 0)),
+                    'wallet_debt':    float(getattr(stu.student_wallet, 'debt', 0)),
+                    'image_url':      stu.image.url if getattr(stu, 'image', None) else '',
+                }
+            })
+
+    return JsonResponse({'success': False, 'message': 'Fingerprint not recognized'}, status=404)

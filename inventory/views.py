@@ -1,7 +1,8 @@
+import base64
 import json
 import random
-
-from django.contrib.auth.decorators import login_required
+from pytz import timezone as pytz_timezone
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -16,9 +17,9 @@ from django.views.generic.detail import DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.sessions.models import Session
 
-from admin_site.models import SchoolSettingModel
+from admin_site.models import SchoolSettingModel, ActivityLogModel
 from inventory.models import *
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from datetime import datetime, date
 from urllib.parse import urlencode
 from django.contrib.auth import logout
@@ -27,13 +28,14 @@ from inventory.models import *
 from inventory.forms import *
 from collections import OrderedDict
 
-from student.models import StudentWalletModel
+from student.models import StudentWalletModel, FingerprintModel
+from student.signals import get_day_ordinal_suffix
 from user_site.models import UserProfileModel
 
 
 class CategoryCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     model = CategoryModel
-    permission_required = 'inventory.add_categorymodel'
+    permission_required = 'inventory.add_productmodel'
     form_class = CategoryForm
     success_message = 'Category Added Successfully'
     template_name = 'inventory/category/index.html'
@@ -49,7 +51,7 @@ class CategoryCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMes
 
 class CategoryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = CategoryModel
-    permission_required = 'inventory.view_categorymodel'
+    permission_required = 'inventory.view_productmodel'
     fields = '__all__'
     template_name = 'inventory/category/index.html'
     context_object_name = "inventory_category_list"
@@ -66,7 +68,7 @@ class CategoryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 class CategoryUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = CategoryModel
-    permission_required = 'inventory.change_categorymodel'
+    permission_required = 'inventory.change_productmodel'
     form_class = CategoryForm
     success_message = 'Category Updated Successfully'
     template_name = 'inventory/category/index.html'
@@ -82,7 +84,7 @@ class CategoryUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMes
 
 class CategoryDeleteView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, DeleteView):
     model = CategoryModel
-    permission_required = 'inventory.delete_categorymodel'
+    permission_required = 'inventory.delete_productmodel'
     success_message = 'Category Deleted Successfully'
     fields = '__all__'
     template_name = 'inventory/category/delete.html'
@@ -138,8 +140,52 @@ class ProductDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['category_list'] = CategoryModel.objects.all().order_by('name')
-        context['product_list'] = ProductModel.objects.all().order_by('name')
+        # Get the current school setting for session and term
+        school_setting = SchoolSettingModel.objects.first()
+        context['school_setting'] = school_setting
+
+        # Filter suppliers related to the current product
+        context['supplier_list'] = SupplierModel.objects.filter(products__id__in=[self.object.id])
+
+        # Get all sales items for the current product
+        all_sale_items = SaleItemModel.objects.filter(product=self.object)
+
+        # Filter sales items for the current term and session
+        current_term_sale_items = all_sale_items.filter(
+            sale__session=school_setting.session,
+            sale__term=school_setting.term
+        )
+
+        # Calculate Current Term Metrics
+        # Aggregate total quantity, total price, and total profit for the current term
+        current_term_aggregates = current_term_sale_items.aggregate(
+            total_quantity=Sum('quantity'),
+            total_price=Sum('subtotal'),  # Changed from 'total_price' to 'subtotal'
+            total_profit=Sum('profit')
+        )
+        context['total_quantity_current_term'] = current_term_aggregates['total_quantity'] or 0
+        context['total_price_current_term'] = current_term_aggregates['total_price'] or 0.00
+        context['total_profit_current_term'] = current_term_aggregates['total_profit'] or 0.00
+
+        # Calculate All Time Metrics
+        # Aggregate total quantity, total price, and total profit for all time
+        all_time_aggregates = all_sale_items.aggregate(
+            total_quantity=Sum('quantity'),
+            total_price=Sum('subtotal'),  # Changed from 'total_price' to 'subtotal'
+            total_profit=Sum('profit')
+        )
+        context['total_quantity_all_time'] = all_time_aggregates['total_quantity'] or 0
+        context['total_price_all_time'] = all_time_aggregates['total_price'] or 0.00
+        context['total_profit_all_time'] = all_time_aggregates['total_profit'] or 0.00
+
+        # The original context['order_list'] was for current term, now we have more specific data
+        # If you still need the queryset of current term sale items, you can keep this:
+        context['order_list'] = current_term_sale_items
+        context['stock_list'] = StockInModel.objects.filter(product=self.object).order_by('-created_at')[:20]
+
+        price_history_list = PriceHistoryModel.objects.filter(product=self.object).order_by('change_date')
+        context['price_history_list'] = price_history_list
+        context['stock_out_form'] = StockOutForm
         return context
 
 
@@ -177,7 +223,7 @@ class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMess
     
 class SupplierCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     model = SupplierModel
-    permission_required = 'inventory.add_suppliermodel'
+    permission_required = 'inventory.add_productmodel'
     form_class = SupplierForm
     success_message = 'Supplier Added Successfully'
     template_name = 'inventory/supplier/create.html'
@@ -192,7 +238,7 @@ class SupplierCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMes
 
 class SupplierListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = SupplierModel
-    permission_required = 'inventory.view_suppliermodel'
+    permission_required = 'inventory.view_productmodel'
     fields = '__all__'
     template_name = 'inventory/supplier/index.html'
     context_object_name = "supplier_list"
@@ -209,7 +255,7 @@ class SupplierListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 class SupplierDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = SupplierModel
-    permission_required = 'inventory.view_suppliermodel'
+    permission_required = 'inventory.view_productmodel'
     fields = '__all__'
     template_name = 'inventory/supplier/detail.html'
     context_object_name = "supplier"
@@ -224,7 +270,7 @@ class SupplierDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
 
 class SupplierUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = SupplierModel
-    permission_required = 'inventory.change_suppliermodel'
+    permission_required = 'inventory.change_productmodel'
     form_class = SupplierForm
     success_message = 'Supplier Updated Successfully'
     template_name = 'inventory/supplier/edit.html'
@@ -240,7 +286,7 @@ class SupplierUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMes
 
 class SupplierDeleteView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, DeleteView):
     model = SupplierModel
-    permission_required = 'inventory.delete_suppliermodel'
+    permission_required = 'inventory.delete_productmodel'
     success_message = 'Supplier Deleted Successfully'
     fields = '__all__'
     template_name = 'inventory/supplier/delete.html'
@@ -265,6 +311,7 @@ def get_staff_instance(user):
 
 
 @login_required
+@permission_required("inventory.add_stockinmodel", raise_exception=True)
 def product_stock_in_view(request):
     stock_in_summary_form = StockInSummaryForm()
     formset = StockInFormSet(queryset=StockInModel.objects.none())
@@ -315,6 +362,24 @@ def product_stock_in_view(request):
     return render(request, 'inventory/stock/stock_in.html', context)
 
 
+class StockInListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = StockInSummaryModel
+    permission_required = 'inventory.view_stockinmodel'
+    fields = '__all__'
+    template_name = 'inventory/stock/index.html'
+    context_object_name = "inventory_stock_list"
+
+    def get_queryset(self):
+        return StockInSummaryModel.objects.annotate(
+            num_products=Count('products') # Annotate each summary with the count of its related products
+        ).filter(num_products__gt=0)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+@login_required
 def api_product_lookup_by_barcode(request):
     barcode = request.GET.get('barcode', None)
     if barcode:
@@ -334,6 +399,7 @@ def api_product_lookup_by_barcode(request):
 
 
 @login_required
+@permission_required("inventory.add_stockinmodel", raise_exception=True)
 def product_stock_in_detail_view(request, pk):
     """
     Displays the details of a specific stock-in summary and its associated products.
@@ -361,7 +427,64 @@ def product_stock_in_detail_view(request, pk):
     return render(request, 'inventory/stock/detail.html', context)
 
 
+class StockOutCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    model = StockOutModel
+    permission_required = 'inventory.add_stockinmodel'
+    form_class = StockOutForm
+    success_message = 'Product Stocked Out'
+    template_name = 'inventory/product/detail.html'
+
+    def form_valid(self, form):
+        """
+        Sets the 'created_by' field to the staff member associated with the
+        current logged-in user's UserProfile before saving.
+        """
+        try:
+            # Get the UserProfile linked to the current user
+            user_profile = UserProfileModel.objects.get(user=self.request.user)
+            # Assign the associated staff object to created_by
+            form.instance.created_by = user_profile.staff
+        except UserProfileModel.DoesNotExist:
+            # Handle case where a UserProfile does not exist for the user
+            # You might log this, raise an error, or assign None/default
+            # For example, to prevent saving if profile is missing:
+            form.add_error(None, "User profile not found. Cannot assign staff.")
+            return self.form_invalid(form)
+        except AttributeError:
+            # Handle case where user_profile exists but 'staff' attribute is missing or None
+            form.add_error(None, "Staff association missing in user profile. Cannot assign staff.")
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('product_detail', kwargs={'pk': self.object.stock.product.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+class StockOutIndexView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = StockOutModel
+    permission_required = 'inventory.add_stockinmodel'
+    template_name = 'inventory/stock/stock_out_index.html'
+    fields = '__all__'
+    context_object_name = "stock_out_list"
+
+    def get_queryset(self):
+        return StockOutModel.objects.order_by('-created_at')[:100]
+
+    def get_success_url(self):
+        return reverse('product_detail', kwargs={'pk': self.object.stock.product.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
 @require_GET
+@login_required
 def api_student_search(request):
     q = request.GET.get('q', '').strip()
     if not q:
@@ -392,7 +515,9 @@ def api_student_search(request):
         })
     return JsonResponse(results, safe=False)
 
+
 @require_GET
+@login_required
 def api_product_search(request):
     q = request.GET.get('q', '').strip()
     if not q:
@@ -409,7 +534,9 @@ def api_product_search(request):
     ]
     return JsonResponse(results, safe=False)
 
+
 @csrf_exempt
+@login_required
 @require_POST
 def api_barcode_lookup(request):
     code = request.POST.get('barcode', '').strip()
@@ -440,6 +567,8 @@ def api_barcode_lookup(request):
     return JsonResponse({'type': None, 'data': {}}, status=404)
 
 
+@login_required
+@permission_required("inventory.add_salemodel", raise_exception=True)
 @transaction.atomic
 def place_order_view(request):
     if request.method == 'GET':
@@ -451,7 +580,11 @@ def place_order_view(request):
         return render(request, 'inventory/sales/place_order.html', context)
 
     # --- POST: Process the sale ---
-    student = get_object_or_404(StudentModel, pk=request.POST.get('student_id'))
+    pk = request.POST.get('student_id')
+    if not pk:
+        messages.error(request, 'Please Select a Student')
+        return redirect(reverse('place_order'))
+    student = get_object_or_404(StudentModel, pk=pk)
     wallet, _ = StudentWalletModel.objects.get_or_create(student=student)
 
     # Gather line-items
@@ -553,12 +686,35 @@ def place_order_view(request):
         wallet.debt = Decimal(wallet.debt) + remainder
     wallet.save()
 
+    target_timezone = pytz_timezone('Africa/Lagos')
+
+    localized_created_at = timezone.localtime(sale.created_at, timezone=target_timezone)
+
+    formatted_time = localized_created_at.strftime(
+        f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+    )
+
+    log = f"""
+                           <div class='text-white bg-secondary' style='padding:5px;'>
+                           <p class=''>Order Placement: <a href={reverse('order_detail', kwargs={'pk': sale.id})}><b>New order of ₦{sale.total_amount}</b></a> placed for
+                           <a href={reverse('student_detail', kwargs={'pk': sale.student.id})}><b>{sale.student.__str__().title()}</b></a>
+                            by <a href={reverse('staff_detail', kwargs={'pk': sale.created_by.id})}><b>{sale.created_by.__str__().title()}</b></a>
+                           <br><span style='float:right'>{formatted_time}</span>
+                           </p>
+
+                           </div>
+                           """
+
+    activity = ActivityLogModel.objects.create(log=log)
+    activity.save()
+
     messages.success(request, 'Order saved successfully.')
     return redirect(reverse('place_order'))
 
 
 @transaction.atomic
 @login_required
+@permission_required("inventory.add_salemodel", raise_exception=True)
 def confirm_order_view(request, sale_id):
     sale = get_object_or_404(SaleModel, pk=sale_id)
     student = sale.student
@@ -676,8 +832,10 @@ def confirm_order_view(request, sale_id):
         return redirect(reverse('view_orders'))
 
 # --- Cancel Order View ---
-@transaction.atomic
+
 @login_required
+@permission_required("inventory.add_salemodel", raise_exception=True)
+@transaction.atomic
 def cancel_order_view(request, sale_id):
     sale = get_object_or_404(SaleModel, pk=sale_id)
     if request.method == 'POST':
@@ -694,6 +852,8 @@ def cancel_order_view(request, sale_id):
         return redirect(reverse('view_pending_orders'))
 
 
+@login_required
+@permission_required("inventory.view_salemodel", raise_exception=True)
 def view_orders(request):
     # (You can add filtering, pagination, etc.)
     orders = SaleModel.objects.select_related('student').exclude(status='pending')
@@ -701,7 +861,8 @@ def view_orders(request):
         'orders': orders,
     })
 
-
+@login_required
+@permission_required("inventory.view_salemodel", raise_exception=True)
 def view_pending_orders(request):
     # (You can add filtering, pagination, etc.)
     orders = SaleModel.objects.select_related('student').filter(status='pending')
@@ -710,6 +871,8 @@ def view_pending_orders(request):
     })
 
 
+@login_required
+@permission_required("inventory.view_salemodel", raise_exception=True)
 def order_detail(request, pk):
     sale = get_object_or_404(SaleModel, pk=pk)
     items = sale.saleitemmodel_set.select_related('product')
@@ -720,4 +883,3 @@ def order_detail(request, pk):
         'items': items,
         'total_profit': total_profit,
     })
-

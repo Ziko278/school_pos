@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 
@@ -90,6 +91,7 @@ class StockInModel(models.Model):
     quantity_added = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
     quantity_left = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0)
     quantity_sold = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0)
+    quantity_stocked_out = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0)
     unit_cost_price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)])
 
     date_added = models.DateField(default=timezone.now)  # Date when stock was added
@@ -116,11 +118,10 @@ class StockInModel(models.Model):
 
             # Check if quantity_left is zero to update status
             # IMPORTANT: Use assignment operator '=' instead of comparison '=='
-        if float(self.quantity_left) <= Decimal('0.00'):  # Use Decimal for comparison
+        if self.quantity_left <= Decimal('0.00'):
             self.status = 'finished'
         else:
-            self.status = 'active'  # Ensure it's set back to active if quantity_left becomes > 0 again
-            # (e.g., if a StockOut was reversed, though usually not possible with FIFO)
+            self.status = 'active'
 
         super(StockInModel, self).save(*args, **kwargs)
 
@@ -160,7 +161,7 @@ class StockOutModel(models.Model):
     Records stock removal for reasons other than sales (e.g., damage, internal use, write-off).
     The cost of removed stock will be calculated based on available StockInModel records.
     """
-    product = models.ForeignKey(ProductModel, on_delete=models.CASCADE, related_name='stock_outs')
+    stock = models.ForeignKey(StockInModel, on_delete=models.CASCADE, related_name='stock_outs')
 
     # Use DecimalField for quantities
     quantity_removed = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))], help_text="Quantity of product removed.")
@@ -171,7 +172,7 @@ class StockOutModel(models.Model):
 
     reason = models.TextField(help_text="Why was this stock removed (e.g., 'Damaged', 'Internal Use', 'Lost').")  # Made reason required
 
-    date_removed = models.DateField(default=timezone.now, help_text="The date this stock was physically removed.")  # Date when stock was removed
+    date_removed = models.DateField(default=timezone.now, blank=True, help_text="The date this stock was physically removed.")  # Date when stock was removed
 
     created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when this record was created.")  # When this record was created
     created_by = models.ForeignKey(StaffModel, on_delete=models.SET_NULL, null=True, blank=True, help_text="Staff member who recorded this stock out.")  # Who removed it
@@ -183,6 +184,26 @@ class StockOutModel(models.Model):
 
     def __str__(self):
         return f"Removed {self.quantity_removed} of {self.product.name} - Reason: {self.reason[:50]}"
+
+    def save(self, *args, **kwargs):
+        """
+        Automatically calculates the 'cost_of_removed_stock' before saving.
+        It multiplies 'quantity_removed' by the 'cost_price' of the associated 'StockInModel'.
+        """
+        # Ensure both 'stock' object is loaded and 'quantity_removed' is set
+        if self.stock and self.quantity_removed is not None:
+            # Access the cost_price from the related StockInModel instance
+            # We assume StockInModel has a DecimalField named 'cost_price'
+            if hasattr(self.stock, 'unit_cost_price') and self.stock.unit_cost_price is not None:
+                self.cost_of_removed_stock = self.quantity_removed * self.stock.unit_cost_price
+            else:
+                # Handle cases where the cost_price might be missing or not set on StockInModel
+                self.cost_of_removed_stock = Decimal('0.00')  # Default to 0 or raise an error
+        else:
+            # If 'stock' or 'quantity_removed' isn't available, default cost to 0
+            self.cost_of_removed_stock = Decimal('0.00')
+
+        super().save(*args, **kwargs)
 
 
 class SaleModel(models.Model):

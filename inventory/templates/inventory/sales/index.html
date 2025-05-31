@@ -13,6 +13,7 @@
                 <th>Total Amount (₦)</th>
                 <th>Items</th>
                 <th>Status</th>
+                <th style="min-width:150px">Staff</th>
                 <th>Action</th>
             </tr>
             </thead>
@@ -21,16 +22,13 @@
             <tr>
                 <td>{{ order.transaction_id }}</td>
                 <td>{{ order.sale_date|date:"Y-m-d H:i" }}</td>
-                <td>
-                    {% if order.student %}
-                    {{ order.student.surname }} {{ order.student.last_name }}
-                    {% else %}
-                    —
-                    {% endif %}
+                <td >{% if order.student %} <a href="{% url 'student_detail' order.student.id %}">{{ order.student|title }}</a>{% endif %}
                 </td>
                 <td>{{ order.total_amount }}</td>
                 <td>{{ order.total_items }}</td>
                 <td>{{ order.get_status_display }}</td>
+                <td >{% if order.created_by %} <a href="{% url 'staff_detail' order.created_by.id %}">{{ order.created_by|title }}</a>{% endif %}
+                
                 <td>
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'order_detail' order.pk %}">
                         View

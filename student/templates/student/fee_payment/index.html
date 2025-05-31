@@ -66,7 +66,7 @@
                                 <td scope="row">{{ payment.mode|title }}</td>
                                 <td scope="row" {% if payment.status == 'pending' %} class='text-warning' {% elif payment.status == 'declined'  %} class='text-danger' {% else %} class='text-success' {% endif %}>{{ payment.status|title }}</td>
                                 <td scope="row" class="text-center">
-                                    <a title="View Fee Payment Detail" style="font-size:12px" class="btn btn-primary" href="#"><i class="bi bi-eye"></i> </a>
+                                    <a title="View Fee Payment Detail" style="font-size:12px" class="btn btn-primary" href="{% url 'deposit_detail' payment.id %}"><i class="bi bi-eye"></i> </a>
                                 </td>
                             </tr>
                         {% endfor %}

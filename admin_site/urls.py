@@ -3,6 +3,7 @@ from admin_site.views import *
 
 urlpatterns = [
     path('', AdminDashboardView.as_view(), name='admin_dashboard'),
+    path('activity-log', ActivityLogView.as_view(), name='activity_log'),
 
     path('school-info/<int:pk>', SchoolInfoDetailView.as_view(), name='school_info_detail'),
     path('school-info/create', SchoolInfoCreateView.as_view(), name='school_info_create'),
