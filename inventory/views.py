@@ -1,6 +1,8 @@
 import base64
 import json
 import random
+
+from django.utils.timezone import now
 from pytz import timezone as pytz_timezone
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
@@ -814,6 +816,36 @@ def confirm_order_view(request, sale_id):
             sale.status = 'completed'
             sale.save()
 
+            # Log confirmation activity
+            localized_created_at = timezone.localtime(now(), timezone=pytz_timezone('Africa/Lagos'))
+            formatted_time = localized_created_at.strftime(
+                f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+            )
+            staff = UserProfileModel.objects.get(user=request.user).staff
+            sale_url = reverse('order_detail', kwargs={'pk': sale.pk})
+            student_url = reverse('student_detail', kwargs={'pk': sale.student.pk})
+            staff_url = reverse('staff_detail', kwargs={'pk': staff.pk}) if staff else '#'
+
+            log = f"""
+            <div class='text-white bg-success p-2' style='border-radius: 5px;'>
+              <p>
+                Order <a href="{sale_url}"><b>#{sale.pk}</b></a> for
+                <a href="{student_url}"><b>{sale.student.__str__().title()}</b></a>
+                was <b>confirmed</b> by
+                <a href="{staff_url}"><b>{staff.__str__().title()}</b></a>.
+                <br>
+                <b>Total:</b> ₦{sale.total_amount:.2f}
+                &nbsp; | &nbsp;
+                <b>Time:</b> <span class="text-light">{formatted_time}</span>
+                <span class='float-end'>{now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+              </p>
+            </div>
+            """
+
+            ActivityLogModel.objects.create(
+                log=log,
+            )
+
             messages.success(request, f"Order #{sale.pk} confirmed successfully.")
             return redirect(reverse('view_orders')) # Redirect to student's order list
 
@@ -831,6 +863,7 @@ def confirm_order_view(request, sale_id):
         messages.warning(request, "Invalid request method for confirming order.")
         return redirect(reverse('view_orders'))
 
+
 # --- Cancel Order View ---
 
 @login_required
@@ -842,6 +875,36 @@ def cancel_order_view(request, sale_id):
         if sale.status == 'pending':
             sale.status = 'cancelled'
             sale.save()
+
+            # Log order cancellation
+            localized_created_at = timezone.localtime(now(), timezone=pytz_timezone('Africa/Lagos'))
+            formatted_time = localized_created_at.strftime(
+                f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+            )
+            staff = UserProfileModel.objects.get(user=request.user).staff
+            sale_url = reverse('order_detail', kwargs={'pk': sale.pk})
+            student_url = reverse('student_detail', kwargs={'pk': sale.student.pk})
+            staff_url = reverse('staff_detail', kwargs={'pk': staff.pk}) if staff else '#'
+
+            log = f"""
+            <div class='text-white bg-danger p-2' style='border-radius: 5px;'>
+              <p>
+                <b>Order Cancellation:</b> Order
+                <a href="{sale_url}"><b>#{sale.pk}</b></a> for
+                <a href="{student_url}"><b>{sale.student.__str__().title()}</b></a>
+                was <b>cancelled</b> by
+                <a href="{staff_url}"><b>{staff.__str__().title()}</b></a>.
+                <br>
+                <b>Time:</b> {formatted_time}
+                <span class='float-end'>{now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+              </p>
+            </div>
+            """
+
+            ActivityLogModel.objects.create(
+                log=log,
+            )
+
             messages.success(request, f"Order #{sale.pk} has been cancelled.")
             return redirect(reverse('view_pending_orders'))
         else:

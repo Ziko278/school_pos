@@ -3,6 +3,7 @@ import io
 from datetime import date
 
 from django.utils import timezone
+from django.utils.timezone import now
 from pytz import timezone as pytz_timezone
 from django.contrib.messages.views import messages
 from django.db.models import Sum
@@ -465,6 +466,37 @@ def confirm_payment_view(request, payment_id):
         payment.balance = student_wallet.balance - student_wallet.debt
         payment.save() # Save the updated payment record
 
+        # Log wallet confirmation
+        from pytz import timezone as pytz_timezone
+        localized_created_at = timezone.localtime(now(), timezone=pytz_timezone('Africa/Lagos'))
+        formatted_time = localized_created_at.strftime(
+            f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+        )
+
+        student_url = reverse('student_detail', kwargs={'pk': student.pk})
+        payment_url = reverse('deposit_detail', kwargs={'pk': payment.pk})
+        staff = UserProfileModel.objects.get(user=request.user).staff
+        staff_url = reverse('staff_detail', kwargs={'pk': staff.pk}) if staff else '#'
+
+        log = f"""
+        <div class='text-white bg-success p-2' style='border-radius:5px;'>
+          <p>
+            Payment of <a href="{payment_url}"><b>₦{payment.amount:.2f}</b></a> for
+            <a href="{student_url}"><b>{student.__str__().title()}</b></a> was
+            <b>confirmed</b> by
+            <a href="{staff_url}"><b>{staff.__str__().title()}</b></a>.
+            <br>
+            <b>Status:</b> Confirmed &nbsp; | &nbsp;
+            <b>Wallet Balance:</b> ₦{student_wallet.balance:.2f}
+            <span class='float-end'>{now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+          </p>
+        </div>
+        """
+
+        ActivityLogModel.objects.create(
+            log=log,
+        )
+
         messages.success(request, f"Payment of ₦{payment.amount} for {student.surname} {student.last_name} confirmed successfully.")
         return redirect(reverse('deposit_index')) # Replace with your actual URL name
 
@@ -493,6 +525,36 @@ def decline_payment_view(request, payment_id):
         # Update the payment status to 'declined'
         payment.status = 'declined'
         payment.save()
+
+        # Log wallet deposit decline
+        from pytz import timezone as pytz_timezone
+        localized_created_at = timezone.localtime(now(), timezone=pytz_timezone('Africa/Lagos'))
+        formatted_time = localized_created_at.strftime(
+            f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+        )
+
+        student_url = reverse('student_detail', kwargs={'pk': student.pk})
+        payment_url = reverse('deposit_detail', kwargs={'pk': payment.pk})
+        staff = UserProfileModel.objects.get(user=request.user).staff
+        staff_url = reverse('staff_detail', kwargs={'pk': staff.pk}) if staff else '#'
+
+        log = f"""
+        <div class='text-white bg-danger p-2' style='border-radius:5px;'>
+          <p>
+            Payment of <a href="{payment_url}"><b>₦{payment.amount:.2f}</b></a> for
+            <a href="{student_url}"><b>{student.__str__().title()}</b></a> was
+            <b>declined</b> by
+            <a href="{staff_url}"><b>{staff.__str__().title()}</b></a>.
+            <br>
+            <b>Status:</b> Declined
+            <span class='float-end'>{now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+          </p>
+        </div>
+        """
+
+        ActivityLogModel.objects.create(
+            log=log,
+        )
 
         messages.success(request, f"Payment of ₦{payment.amount} for {student.surname} {student.last_name} has been declined.")
         return redirect(reverse('deposit_index'))  # Replace with your actual URL name

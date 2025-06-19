@@ -8,6 +8,7 @@ from django.core.mail import send_mail
 from django.db.models import Sum
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -41,7 +42,7 @@ class ParentDashboardView(LoginRequiredMixin, TemplateView):
         # Now using SaleItemModel to count actual items sold in completed sales
         total_products = SaleItemModel.objects.filter(
             sale__student=student,
-            sale__sale_date=today,
+            sale__sale_date__date=now().date(),
             sale__status='completed'
         ).aggregate(total_items=Sum('quantity'))['total_items'] or 0
         context['total_products'] = total_products
@@ -50,7 +51,7 @@ class ParentDashboardView(LoginRequiredMixin, TemplateView):
         # Now using SaleModel for total_amount in completed sales
         total_amount_spent_today = SaleModel.objects.filter(
             student=student,
-            sale_date=today,
+            sale_date__date=now().date(),
             status='completed'
         ).aggregate(total_amount=Sum('total_amount'))['total_amount'] or 0.00
         context['total_amount_spent_today'] = total_amount_spent_today
