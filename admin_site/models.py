@@ -32,6 +32,7 @@ class SchoolSettingModel(models.Model):
     auto_low_balance_notification = models.BooleanField(default=True)
     max_student_debt = models.FloatField()
     low_balance = models.FloatField()
+    meal_cost = models.FloatField(default=0)
     allow_refund = models.BooleanField(default=False)
     auto_generate_student_id = models.BooleanField(default=True)
     session = models.ForeignKey(SessionModel, on_delete=models.SET_NULL, null=True, blank=True)

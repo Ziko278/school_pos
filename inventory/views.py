@@ -714,6 +714,152 @@ def place_order_view(request):
     return redirect(reverse('place_order'))
 
 
+
+@login_required
+@permission_required("inventory.add_salemodel", raise_exception=True)
+@transaction.atomic
+def cafeteria_order_view(request):
+    if request.method == 'GET':
+        settings_obj = SchoolSettingModel.objects.last()
+        context = {
+            'settings': settings_obj,
+            'products': ProductModel.objects.all(),
+        }
+        return render(request, 'inventory/sales/place_cafeteria_order.html', context)
+
+    # --- POST: Process the sale ---
+    pk = request.POST.get('student_id')
+    if not pk:
+        messages.error(request, 'Please Select a Student')
+        return redirect(reverse('place_order'))
+    student = get_object_or_404(StudentModel, pk=pk)
+    wallet, _ = StudentWalletModel.objects.get_or_create(student=student)
+
+    # Gather line-items
+    idx = 0
+    items = []
+    total_amount = Decimal('0.00')
+    total_items  = 0
+    while True:
+        pid = request.POST.get(f'products[{idx}][product_id]')
+        qty = request.POST.get(f'products[{idx}][quantity]')
+        if not pid or not qty:
+            break
+        product    = get_object_or_404(ProductModel, pk=pid)
+        quantity   = int(qty)
+        unit_price = product.price
+        line_total = unit_price * quantity
+
+        items.append((product, quantity, unit_price))
+        total_amount += line_total
+        total_items  += quantity
+        idx += 1
+
+    # Validate funds
+    max_debt  = SchoolSettingModel.objects.first().max_student_debt
+    available = wallet.balance + (max_debt - wallet.debt)
+    if total_amount > available:
+        return HttpResponseBadRequest('Insufficient funds or max debt exceeded')
+
+    # Create Sale header
+    sale = SaleModel.objects.create(
+        student=student,
+        total_amount=total_amount,
+        total_items=total_items
+    )
+    try:
+        created_by = UserProfileModel.objects.get(user=request.user).staff
+        sale.created_by = created_by
+        sale.save()
+    except Exception:
+        pass
+
+    # Process each line with FIFO batch consumption
+    for product, qty, unit_price in items:
+        # Create a placeholder SaleItem
+        sale_item = SaleItemModel.objects.create(
+            sale=sale,
+            product=product,
+            quantity=qty,
+            unit_price=unit_price,
+            cost_price=Decimal('0.00'),
+            profit=Decimal('0.00'),
+            subtotal=unit_price * qty
+        )
+
+        # FIFO consume StockInModel.quantity_left, update quantity_sold
+        remaining  = qty
+        total_cost = Decimal('0.00')
+        batches = StockInModel.objects.filter(
+            product=product,
+            quantity_left__gt=0
+        ).order_by('date_added', 'created_at')
+
+        for batch in batches:
+            take = min(remaining, batch.quantity_left)
+            batch.quantity_left -= take
+            batch.quantity_sold  = (batch.quantity_sold or Decimal('0.00')) + take
+            batch.status         = 'finished' if batch.quantity_left <= 0 else 'active'
+            batch.save()
+
+            total_cost += take * batch.unit_cost_price
+            remaining  -= take
+            if remaining == 0:
+                break
+
+        if remaining > 0:
+            # Not enough stock to fulfill this line — rollback
+            raise ValueError(f"Not enough stock to fulfill {product.name}")
+
+        # Compute average cost and profit
+        avg_cost     = (total_cost / qty).quantize(Decimal('0.01'))
+        profit_each  = (unit_price - avg_cost).quantize(Decimal('0.01'))
+        total_profit = profit_each * qty
+
+        # Update the SaleItem with actual cost & profit
+        sale_item.cost_price = avg_cost
+        sale_item.profit     = total_profit
+        sale_item.save()
+
+        # Update ProductModel.quantity (subtract sold quantity)
+        product.quantity -= qty
+        product.save()
+
+    # Deduct from student wallet / debt
+    if Decimal(wallet.balance) >= total_amount:
+        wallet.balance = Decimal(wallet.balance) - total_amount
+    else:
+        remainder = total_amount - Decimal(wallet.balance)
+        wallet.balance = Decimal('0.00')
+        wallet.debt = Decimal(wallet.debt) + remainder
+    wallet.save()
+
+    target_timezone = pytz_timezone('Africa/Lagos')
+
+    localized_created_at = timezone.localtime(sale.created_at, timezone=target_timezone)
+
+    formatted_time = localized_created_at.strftime(
+        f"%B {localized_created_at.day}{get_day_ordinal_suffix(localized_created_at.day)} %Y %I:%M%p"
+    )
+
+    log = f"""
+                           <div class='text-white bg-secondary' style='padding:5px;'>
+                           <p class=''>Order Placement: <a href={reverse('order_detail', kwargs={'pk': sale.id})}><b>New order of ₦{sale.total_amount}</b></a> placed for
+                           <a href={reverse('student_detail', kwargs={'pk': sale.student.id})}><b>{sale.student.__str__().title()}</b></a>
+                            by <a href={reverse('staff_detail', kwargs={'pk': sale.created_by.id})}><b>{sale.created_by.__str__().title()}</b></a>
+                           <br><span style='float:right'>{formatted_time}</span>
+                           </p>
+
+                           </div>
+                           """
+
+    activity = ActivityLogModel.objects.create(log=log)
+    activity.save()
+
+    messages.success(request, 'Order saved successfully.')
+    return redirect(reverse('place_order'))
+
+
 @transaction.atomic
 @login_required
 @permission_required("inventory.add_salemodel", raise_exception=True)

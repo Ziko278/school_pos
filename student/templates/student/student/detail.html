@@ -38,6 +38,7 @@
     <div class="card">
         <div class="card-body">
             <h4 class="card-title">ACTIONS:
+                 <button type="button" title="Convert Balance to Meal Ticket" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#buyticket"><i class="bi bi-arrow-repeat"></i></button>
                 <a title="Edit Student" href="{% url 'student_edit' student.id %}" class="btn btn-warning"><i class="bi bi-pencil-square"></i></a>
                 <a title="Delete Student" href="{% url 'student_delete' student.id %}" class="btn btn-danger"><i class="bi bi-trash"></i></a>
 
@@ -104,6 +105,7 @@
                                                     <p>Parent Email: {{student.email|lower}} </p>
                                                     <p>Gender: {{student.gender|title}} </p>
                                                     <p><b>Wallet Balance: ₦{{student.student_wallet.balance|intcomma}} </b></p>
+                                                    <p><b>Meal Tickets: {{student.student_wallet.meal}} </b></p>
                                                     <p><b>Debt: ₦{{student.student_wallet.debt|intcomma}} </b></p>
                                                     <p><b>Form Teacher: {% if student.form_teacher %} {{student.form_teacher.full_name|title}} ({{student.form_teacher.phone_number|title}}) {% endif %} </b></p>
                                                  </div>
@@ -492,7 +494,34 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 </div>
 
+<form method="POST" action="{% url 'convert_money_ticket' %}">
+    {% csrf_token %}
+    <input type="hidden" name="student_id" value="{{student.id}}">
+    <div class="modal fade" id="buyticket" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><b>Convert Balance to meal Ticket</b></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><b>Current Balance: ₦{{student.student_wallet.balance|intcomma}} </b></p>
+                    <p><b>Current Meal Tickets: {{student.student_wallet.meal}} </b></p>
+                    <input type="hidden" name="updated_by" value="{{ user.id }}" />
+                    <div class="form-floating">
+                        <input type="number" name="amount" max="{{max_ticket}}" autocomplete="off" required class="form-control">
+                        <label for="floatingName">Tickets to Buy <span style="color:red"><b>*</b></span></label>
+                    </div><br />
 
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Convert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
 
 
 <script src="{% static 'admin_site/scripts/jquery.js' %}"></script>

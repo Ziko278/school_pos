@@ -16,7 +16,7 @@ from barcode.writer import ImageWriter
 def generate_barcode(identifier):
     # Generate the barcode image as bytes
     buffer = BytesIO()
-    code = barcode.Code39(identifier, writer=ImageWriter(), add_checksum=False)
+    code = barcode.Code39(identifier, writer=ImageWriter, add_checksum=False)
     code.write(buffer)
 
     # Reset buffer position to the beginning
@@ -123,6 +123,7 @@ class StudentModel(models.Model):
 class StudentWalletModel(models.Model):
     student = models.OneToOneField(StudentModel, on_delete=models.CASCADE, blank=True, related_name='student_wallet')
     balance = models.FloatField(default=0.0)
+    meal = models.IntegerField(default=0)
     debt = models.FloatField(default=0.0)
 
     def __str__(self):

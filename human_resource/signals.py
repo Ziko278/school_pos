@@ -3,6 +3,13 @@ from django.dispatch import receiver
 from human_resource.models import StaffModel
 from django.contrib.auth.models import User
 from user_site.models import UserProfileModel
+import secrets
+import string
+
+
+def generate_secure_password(length=8):
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 @receiver(post_save, sender=StaffModel)
@@ -10,7 +17,7 @@ def create_staff_account(sender, instance, created, **kwargs):
     if created:
         staff = instance
         username = staff.email
-        password = User.objects.make_random_password(length=8)
+        password = generate_secure_password(8)
         email = staff.email
 
         user = User.objects.create_user(username=username, email=email, password=password, is_active=True, is_staff=True)

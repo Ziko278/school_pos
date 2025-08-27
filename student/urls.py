@@ -22,6 +22,7 @@ urlpatterns = [
     path('deposit/<int:student_pk>/create', deposit_create_view, name='deposit_create'),
     path('deposit/<int:payment_id>/confirm/', confirm_payment_view, name='confirm_payment'),
     path('deposit/<int:payment_id>/cancel/', decline_payment_view, name='decline_payment'),
+    path('convert-balance-to-ticket/', convert_money_ticket, name='convert_money_ticket'),
 
 ]
 

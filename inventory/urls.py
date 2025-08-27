@@ -21,6 +21,7 @@ urlpatterns = [
     path('product/stock-in/<int:pk>/detail', product_stock_in_detail_view, name='product_stock_in_detail'),
     path('api/product-lookup-by-barcode/', api_product_lookup_by_barcode, name='api_product_lookup_by_barcode'),
     path('place-order/', place_order_view, name='place_order'),
+    path('place-cafeteria-order/', cafeteria_order_view, name='place_cafeteria_order'),
     path('orders/', view_orders, name='view_orders'),
     path('orders/pending', view_pending_orders, name='view_pending_orders'),
     path('order/<int:sale_id>/confirm/', confirm_order_view, name='confirm_order'),

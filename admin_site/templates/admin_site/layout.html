@@ -180,6 +180,15 @@
         </li>
         {% endif %}
 
+        {% if 'inventory.add_salemodel' in perms  %}
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'place_cafeteria_order' %}">
+                <i class="bi bi-cart-plus"></i>
+                <span>Cafeteria Order</span>
+            </a>
+        </li>
+        {% endif %}
+
         {% if 'inventory.view_salemodel' in perms  %}
         <li class="nav-item">
             <a class="nav-link" href="{% url 'view_orders' %}">

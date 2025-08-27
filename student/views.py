@@ -1,5 +1,6 @@
 import base64
 import io
+import math
 from datetime import date
 
 from django.utils import timezone
@@ -99,6 +100,8 @@ class StudentDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView)
         student = self.object
         context['student'] = student
         context['school_setting'] = school_setting
+        context['max_ticket'] = math.floor(student.student_wallet.balance/school_setting.meal_cost)
+
         context['payment_list'] = StudentFundingModel.objects.filter(student=student, term=school_setting.term,
                                                           session=school_setting.session).order_by('-created_at')
         context['order_list'] = SaleModel.objects.filter(student=student, term=school_setting.term, session=school_setting.session)
@@ -637,8 +640,31 @@ def identify_student_by_fingerprint(request):
                     'student_class':  getattr(stu, 'student_class', ''),
                     'wallet_balance': float(getattr(stu.student_wallet, 'balance', 0)),
                     'wallet_debt':    float(getattr(stu.student_wallet, 'debt', 0)),
+                    'meal':    float(getattr(stu.student_wallet, 'meal', 0)),
                     'image_url':      stu.image.url if getattr(stu, 'image', None) else '',
                 }
             })
 
     return JsonResponse({'success': False, 'message': 'Fingerprint not recognized'}, status=404)
+
+
+def convert_money_ticket(request):
+    student_id = request.POST.get('student_id')
+    student = StudentModel.objects.get(pk=student_id)
+    wallet = StudentWalletModel.objects.get(student=student)
+    amount = float(request.POST.get('amount'))
+    site_setting = SchoolSettingModel.objects.first()
+    if not site_setting:
+        messages.error(request, 'Setting not found, conversion not possible')
+        return redirect(reverse('student_detail', kwargs={'pk': student_id}))
+    total_cost = site_setting.meal_cost * amount
+    if total_cost > wallet.balance:
+        messages.error(request, 'Insufficient fund for conversion')
+        return redirect(reverse('student_detail', kwargs={'pk': student_id}))
+
+    wallet.balance -= total_cost
+    wallet.meal += amount
+    wallet.save()
+
+    messages.success(request, 'Meal Tickets Bought Successfully')
+    return redirect(reverse('student_detail', kwargs={'pk': student_id}))
